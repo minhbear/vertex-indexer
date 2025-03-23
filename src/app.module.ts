@@ -8,11 +8,14 @@ import {
   REDIS_PORT,
   REDIS_TLS,
 } from './app.environment';
+import { WebsocketListenerModule } from './websocket-listener/websocket-listener.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
     dbOrmModuleAsync,
     loggerModule,
+    EventEmitterModule.forRoot(),
     RedisModule.forRootAsync({
       host: REDIS_HOST,
       port: REDIS_PORT,
@@ -21,6 +24,7 @@ import {
       tls: REDIS_TLS === true ? {} : undefined,
     }),
     bullModule,
+    WebsocketListenerModule,
   ],
   providers: [],
 })
