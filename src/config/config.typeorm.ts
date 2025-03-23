@@ -15,13 +15,6 @@ import {
   addTransactionalDataSource,
   deleteDataSourceByName,
 } from 'typeorm-transactional';
-import {
-  DATABASE_HOST,
-  DATABASE_NAME,
-  DATABASE_PASSWORD,
-  DATABASE_PORT,
-  DATABASE_USER,
-} from 'src/app.environment';
 
 export class PinoTypeOrmLogger extends AbstractLogger {
   constructor(
@@ -84,11 +77,11 @@ export class PinoTypeOrmLogger extends AbstractLogger {
 
 export const dataSourceOptions: TypeOrmModuleOptions = {
   type: 'postgres',
-  host: DATABASE_HOST,
-  port: Number(DATABASE_PORT),
-  username: DATABASE_USER,
-  password: DATABASE_PASSWORD,
-  database: DATABASE_NAME,
+  host: process.env.DATABASE_HOST,
+  port: Number(process.env.DATABASE_PORT),
+  username: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME,
   autoLoadEntities: true,
   synchronize: process.env.TYPEORM_SYNCHRONIZE
     ? JSON.parse(process.env.TYPEORM_SYNCHRONIZE)
@@ -96,8 +89,8 @@ export const dataSourceOptions: TypeOrmModuleOptions = {
   logging: process.env.TYPEORM_LOGGING
     ? JSON.parse(process.env.TYPEORM_LOGGING)
     : false,
-  entities: ['dist/libs/common/database/entities/*.entity.{ts,js}'],
-  migrations: ['dist/libs/common/database/migrations/*.{ts,js}'],
+  entities: [`${__dirname}/../../dist/database/entities/*.entity.{ts,js}`],
+  migrations: [`${__dirname}/../../dist/database/migrations/*.{ts,js}`],
   // ssl: {
   //   rejectUnauthorized: false,
   // },

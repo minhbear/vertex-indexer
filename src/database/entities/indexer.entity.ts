@@ -1,0 +1,54 @@
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
+import { AccountEntity } from './account.entity';
+import { IdlDappEntity } from './idl-dapp.entity';
+
+@Entity({
+  name: 'indexer',
+})
+export class IndexerEntity extends AbstractEntity {
+  @PrimaryGeneratedColumn({ name: 'id', type: 'bigint' })
+  id: number;
+
+  @Column({
+    name: 'name',
+    type: 'varchar',
+    length: 255,
+    nullable: false,
+  })
+  name: string;
+
+  @Column({
+    name: 'program_id',
+    type: 'varchar',
+    length: 255,
+    nullable: false,
+  })
+  programId: string;
+
+  @Column({
+    name: 'idl_id',
+    type: 'bigint',
+  })
+  idlId: number;
+
+  @ManyToOne(() => IdlDappEntity)
+  @JoinColumn({ name: 'idl_id', referencedColumnName: 'id' })
+  idl: IdlDappEntity;
+
+  @Column({
+    type: 'bigint',
+    name: 'account_id',
+  })
+  accountId: number;
+
+  @ManyToOne(() => IndexerEntity)
+  @JoinColumn({ name: 'account_id', referencedColumnName: 'id' })
+  account: AccountEntity;
+}
