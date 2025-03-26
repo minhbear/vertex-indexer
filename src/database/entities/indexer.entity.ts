@@ -3,11 +3,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { AccountEntity } from './account.entity';
 import { IdlDappEntity } from './idl-dapp.entity';
+import { IndexerTriggerEntity } from './indexer-trigger.entity';
 
 @Entity({
   name: 'indexer',
@@ -51,4 +53,10 @@ export class IndexerEntity extends AbstractEntity {
   @ManyToOne(() => IndexerEntity)
   @JoinColumn({ name: 'account_id', referencedColumnName: 'id' })
   account: AccountEntity;
+
+  @OneToMany(
+    () => IndexerTriggerEntity,
+    (indexerTriggers) => indexerTriggers.indexer,
+  )
+  indexerTriggers: IndexerTriggerEntity[];
 }

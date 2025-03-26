@@ -10,6 +10,8 @@ import {
 } from './app.environment';
 import { WebsocketListenerModule } from './websocket-listener/websocket-listener.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { IndexerModule } from './indexer/indexer.module';
+import { IdlDappModule } from './idl-dapp/idl-dapp.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     }),
     bullModule,
     WebsocketListenerModule,
+    IndexerModule,
+    IdlDappModule,
   ],
   providers: [],
 })
