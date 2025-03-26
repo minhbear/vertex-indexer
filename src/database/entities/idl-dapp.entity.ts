@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
+import { Idl } from '@coral-xyz/anchor';
 
 @Entity({
   name: 'idl_dapp',
@@ -29,7 +30,7 @@ export class IdlDappEntity extends AbstractEntity {
     type: 'json',
     nullable: false,
   })
-  idlJson: JSON;
+  idlJson: Idl;
 
   @Column({
     name: 'hash_id',

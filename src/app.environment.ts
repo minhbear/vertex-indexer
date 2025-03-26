@@ -6,8 +6,7 @@ export const NODE_ENV: string = process.env.NODE_ENV || 'edas';
 
 // Server config
 export const PORT: number = parseInt(process.env.PORT, 10) || 3000;
-export const CONTEXT_PATH: string = process.env.CONTEXT_PATH || '/edas-account';
-export const EDAS_DOMAIN: string = process.env.EDAS_DOMAIN || '';
+export const CONTEXT_PATH: string = process.env.CONTEXT_PATH || '/api';
 
 // Logging config
 export const LOGGING_CONSOLE_LEVEL =
@@ -53,3 +52,7 @@ export const ACCOUNT_LEVEL_UPDATE_DELAY = 500;
 // RPC
 export const RPC_URL = process.env.RPC_URL || '';
 export const WS_RPC_URL = process.env.WS_RPC_URL || '';
+
+// PDA Change
+export const GET_INDEXER_PAGING =
+  parseInt(process.env.GET_INDEXER_PAGING) || 10;

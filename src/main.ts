@@ -12,6 +12,7 @@ import { HttpExceptionFilter } from './exceptions/http-exception';
 import { ErrorsInterceptor, TransformInterceptor } from './interceptors';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
 import { swaggerOptions } from './config';
 
 async function bootstrap() {
@@ -19,6 +20,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+
+  app.use(bodyParser.json({ limit: '10mb' }));
+  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
   app.enableCors();
   app.useLogger(app.get(Logger));
   app.flushLogs();
