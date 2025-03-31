@@ -15,6 +15,11 @@ export interface Response<T> {
   data: T;
 }
 
+export class ResponseOk {
+  @ApiProperty()
+  statusCode: number;
+}
+
 export class PagingRequest {
   //TODO implement sorts
   @ApiPropertyOptional({ default: 1 })

@@ -14,6 +14,9 @@ import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { AbstractJobProcessor } from 'src/common/processors/common.processor';
+import path from 'path';
+import { Worker } from 'worker_threads';
+import { serializePda } from 'src/common/utils';
 
 @Processor(SystemQueue.INDEXER_SYSTEM)
 export class IndexerProcessor extends AbstractJobProcessor {
@@ -51,13 +54,56 @@ export class IndexerProcessor extends AbstractJobProcessor {
       }
 
       const accountData = await program.account[pdaName].fetch(pdaPubkey);
-      // TODO: Write action save to database
+      // TODO: Split to Job if monitor had issue performance/bottleneck
+
+      await this.executeUserScript(accountData);
+
+      // TODO: Save to DB
     } catch (error) {
       this.logger.error(error);
       throw error;
     }
 
     return 'FINISHED';
+  }
+
+  async executeUserScript(pdaParser: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      // NOTE: Sample User script
+      const userScript = `
+        function execute(pdaParser) {
+          const marketPrice = new utils.kamino.Fraction(pdaParser.liquidity.marketPriceSf);
+
+          return marketPrice.toDecimal().toString();
+        }
+      `;
+      const serialize = serializePda(pdaParser);
+
+      const worker = new Worker(path.resolve(__dirname, './worker.js'), {
+        workerData: {
+          userScript,
+          pdaParser: JSON.stringify(serialize),
+        },
+      });
+
+      worker.on('message', (result) => {
+        this.logger.debug('🚀 Worker Result:', result);
+        resolve(result);
+        worker.terminate();
+      });
+
+      worker.on('error', (error) => {
+        this.logger.error('Worker Error:', error);
+        reject(error);
+        worker.terminate();
+      });
+
+      worker.on('exit', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Worker exited with code ${code}`));
+        }
+      });
+    });
   }
 
   private async getIndexer(
