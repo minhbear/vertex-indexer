@@ -117,9 +117,9 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
   async getAllProgramId(): Promise<string[]> {
     const idlDapps = await this.idlDappRepository
       .createQueryBuilder('idlDapp')
-      .select('DISTINCT(idlDapp.programId) AS programId')
+      .select('DISTINCT(idlDapp.programId) AS program_id')
       .getRawMany();
 
-    return idlDapps.map((idlDapp) => idlDapp.programId);
+    return idlDapps.map((idlDapp) => idlDapp.program_id);
   }
 }

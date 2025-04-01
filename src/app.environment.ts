@@ -56,3 +56,9 @@ export const WS_RPC_URL = process.env.WS_RPC_URL || '';
 // PDA Change
 export const GET_INDEXER_PAGING =
   parseInt(process.env.GET_INDEXER_PAGING) || 10;
+
+// Auth
+export const WALLET_NONCE_TTL: number =
+  parseInt(process.env.WALLET_NONCE_TTL, 10) || 3000000;
+export const JWT_ACCESS_SECRET =
+  process.env.JWT_ACCESS_SECRET || 'access-secret';

@@ -27,6 +27,14 @@ export class IndexerEntity extends AbstractEntity {
   name: string;
 
   @Column({
+    name: 'slug',
+    type: 'varchar',
+    length: 255,
+    nullable: false,
+  })
+  slug: string;
+
+  @Column({
     name: 'program_id',
     type: 'varchar',
     length: 255,

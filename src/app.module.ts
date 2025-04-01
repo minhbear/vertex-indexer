@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
-import { bullModule, dbOrmModuleAsync, loggerModule } from './config';
+import {
+  bullModule,
+  cacheModule,
+  dbOrmModuleAsync,
+  loggerModule,
+} from './config';
 import { RedisModule } from './redis/redis.module';
 import {
   REDIS_DATABASE_NUMBER,
@@ -12,6 +17,8 @@ import { WebsocketListenerModule } from './websocket-listener/websocket-listener
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { IndexerModule } from './indexer/indexer.module';
 import { IdlDappModule } from './idl-dapp/idl-dapp.module';
+import { AuthModule } from './auth/auth.module';
+import { AccountModule } from './account/account.module';
 
 @Module({
   imports: [
@@ -26,9 +33,12 @@ import { IdlDappModule } from './idl-dapp/idl-dapp.module';
       tls: REDIS_TLS === true ? {} : undefined,
     }),
     bullModule,
+    cacheModule,
     WebsocketListenerModule,
     IndexerModule,
     IdlDappModule,
+    AuthModule,
+    AccountModule,
   ],
   providers: [],
 })

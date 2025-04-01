@@ -8,7 +8,7 @@ import {
   PORT,
   SWAGGER_ENDPOINT,
 } from './app.environment';
-import { HttpExceptionFilter } from './exceptions/http-exception';
+import { HttpExceptionFilter } from './common/exceptions/http-exception';
 import { ErrorsInterceptor, TransformInterceptor } from './interceptors';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
