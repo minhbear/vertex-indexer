@@ -6,10 +6,10 @@ import {
   SystemQueue,
   SystemQueueJob,
 } from 'src/common/queue';
-import { IUpdateIndexerJob } from '../interfaces';
+import { ITransformResult, IUpdateIndexerJob } from '../interfaces';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { RPC_URL } from 'src/app.environment';
-import { Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
@@ -27,6 +27,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
     private readonly indexerSystemQueue: Queue,
     @InjectRepository(IndexerEntity)
     private readonly indexerRepository: Repository<IndexerEntity>,
+    private readonly dataSource: DataSource,
     protected readonly logger: PinoLogger,
   ) {
     super(logger, indexerSystemQueue);
@@ -56,9 +57,12 @@ export class IndexerProcessor extends AbstractJobProcessor {
       const accountData = await program.account[pdaName].fetch(pdaPubkey);
       // TODO: Split to Job if monitor had issue performance/bottleneck
 
-      await this.executeUserScript(accountData);
+      const transformResult = await this.executeUserScript(accountData);
 
-      // TODO: Save to DB
+      await this.saveDataToIndexerTable(
+        indexer.indexerTriggers[0].indexerTable.fullTableName,
+        transformResult,
+      );
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -67,14 +71,20 @@ export class IndexerProcessor extends AbstractJobProcessor {
     return 'FINISHED';
   }
 
-  async executeUserScript(pdaParser: any): Promise<any> {
+  async executeUserScript(pdaParser: any): Promise<ITransformResult> {
     return new Promise((resolve, reject) => {
       // NOTE: Sample User script
       const userScript = `
         function execute(pdaParser) {
           const marketPrice = new utils.kamino.Fraction(pdaParser.liquidity.marketPriceSf);
 
-          return marketPrice.toDecimal().toString();
+          return {
+            action: 'INSERT',
+            data: {
+              liquidity_available: new utils.common.BN(pdaParser.liquidity.availableAmount).toString(),
+              reserve_address: '711717171717171717'
+            }
+          }
         }
       `;
       const serialize = serializePda(pdaParser);
@@ -104,6 +114,57 @@ export class IndexerProcessor extends AbstractJobProcessor {
         }
       });
     });
+  }
+
+  async saveDataToIndexerTable(
+    dbName: string,
+    input: ITransformResult,
+  ): Promise<void> {
+    const { action, data } = input;
+
+    const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      if (action === 'INSERT') {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into(dbName)
+          .values(data)
+          .execute();
+      } else if (action === 'UPDATE') {
+        if (!data.id) {
+          throw new Error('Missing ID for UPDATE operation');
+        }
+
+        const { id, ...updateData } = data;
+
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(dbName)
+          .set(updateData)
+          .where('id = :id', { id })
+          .execute();
+      } else if (action === 'DELETE') {
+        if (!data.id) {
+          throw new Error('Missing ID for DELETE operation');
+        }
+
+        // TODO: Implement DELETE
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(
+        `Failed to execute ${action} on ${dbName}: ${error.message}`,
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   private async getIndexer(
