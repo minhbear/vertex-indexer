@@ -112,7 +112,7 @@ export class IndexerService {
   }): Promise<ResponseOk> {
     const { indexerId, tableName, accountId } = input;
 
-    const indexer = await this.findIndexer(indexerId, accountId);
+    await this.findIndexer(indexerId, accountId);
 
     const tableMetadata = await this.tableMetadataRepository.findOne({
       where: { tableName, indexerId },
@@ -120,6 +120,10 @@ export class IndexerService {
     if (!tableMetadata) {
       throw new NotFoundException('Table not found');
     }
+
+    await this.tableMetadataRepository.query(`
+      DELETE FROM indexer_trigger WHERE indexer_table_id = ${tableMetadata.id};  
+    `);
 
     const dropTableQuery = `DROP TABLE IF EXISTS ${tableMetadata.fullTableName};`;
     await this.tableMetadataRepository.query(dropTableQuery);
