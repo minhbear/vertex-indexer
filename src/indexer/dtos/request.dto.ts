@@ -22,9 +22,9 @@ export class CreateIndexerSpaceDto {
   name: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  idlId: number;
+  idlId: string;
 
   @Exclude()
   accountId: number;
