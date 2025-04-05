@@ -41,6 +41,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
     job: Job<IUpdateIndexerJob>,
   ): Promise<string> {
     try {
+      console.log('go in hereeeee');
       const { indexerId, pdaPubkeyStr } = job.data;
 
       const indexer = await this.getIndexer(indexerId, pdaPubkeyStr);
@@ -49,6 +50,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
       const program = new Program(idlJson, indexer.programId, provider);
       const pdaPubkey = new PublicKey(pdaPubkeyStr);
       const pdaName = indexer.indexerTriggers[0].pdaName;
+      const transformScript = indexer.indexerTriggers[0].transformerPda.script;
       if (!(pdaName in program.account)) {
         this.logger.error(`PDA name ${pdaName} not found in program account`);
         return 'FAILED';
@@ -57,7 +59,10 @@ export class IndexerProcessor extends AbstractJobProcessor {
       const accountData = await program.account[pdaName].fetch(pdaPubkey);
       // TODO: Split to Job if monitor had issue performance/bottleneck
 
-      const transformResult = await this.executeUserScript(accountData);
+      const transformResult = await this.executeUserScript(
+        accountData,
+        transformScript,
+      );
 
       await this.saveDataToIndexerTable(
         indexer.indexerTriggers[0].indexerTable.fullTableName,
@@ -71,27 +76,16 @@ export class IndexerProcessor extends AbstractJobProcessor {
     return 'FINISHED';
   }
 
-  async executeUserScript(pdaParser: any): Promise<ITransformResult> {
+  async executeUserScript(
+    pdaParser: any,
+    transformScript: string,
+  ): Promise<ITransformResult> {
     return new Promise((resolve, reject) => {
-      // NOTE: Sample User script
-      const userScript = `
-        function execute(pdaParser) {
-          const marketPrice = new utils.kamino.Fraction(pdaParser.liquidity.marketPriceSf);
-
-          return {
-            action: 'INSERT',
-            data: {
-              liquidity_available: new utils.common.BN(pdaParser.liquidity.availableAmount).toString(),
-              reserve_address: '711717171717171717'
-            }
-          }
-        }
-      `;
       const serialize = serializePda(pdaParser);
 
       const worker = new Worker(path.resolve(__dirname, './worker.js'), {
         workerData: {
-          userScript,
+          userScript: transformScript,
           pdaParser: JSON.stringify(serialize),
         },
       });

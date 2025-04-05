@@ -8,13 +8,13 @@ import { Reflector } from '@nestjs/core';
 import { instanceToPlain } from 'class-transformer';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Response } from '../common/dtos/common.dto';
+import { Response } from '../dtos/common.dto';
 
 @Injectable()
-export class TransformInterceptor<T>
+export class TransformResponseInterceptor<T>
   implements NestInterceptor<T, Response<T>>
 {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   intercept(
     context: ExecutionContext,

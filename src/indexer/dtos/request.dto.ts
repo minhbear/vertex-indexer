@@ -1,14 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Transform, Type } from 'class-transformer';
 import {
+  IsEnum,
   IsIn,
   IsNotEmpty,
   IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
 import { TypeColumn } from 'src/common/constant';
+import { TriggerType } from 'src/common/enum/common.enum';
 import { ColumnType } from 'src/common/types/column-type';
 
 export class CreateIndexerSpaceDto {
@@ -60,6 +63,34 @@ export class CreateTableDto {
   @ValidateNested({ each: true })
   @Type(() => TableSchemaDto)
   schema: TableSchemaDto[];
+
+  accountId: number;
+}
+
+export class RegisterIndexerWithTransformDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => parseInt(value))
+  tableId: number;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsEnum(TriggerType)
+  triggerType: TriggerType;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  pdaPubkey: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  pdaName: string;
+
+  indexerId: number;
 
   accountId: number;
 }

@@ -9,7 +9,10 @@ import {
   SWAGGER_ENDPOINT,
 } from './app.environment';
 import { HttpExceptionFilter } from './common/exceptions/http-exception';
-import { ErrorsInterceptor, TransformInterceptor } from './interceptors';
+import {
+  ErrorsInterceptor,
+  TransformResponseInterceptor,
+} from './common/interceptors';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
@@ -32,7 +35,7 @@ async function bootstrap() {
   });
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(
-    new TransformInterceptor(app.get(Reflector)),
+    new TransformResponseInterceptor(app.get(Reflector)),
     new ErrorsInterceptor(),
     new LoggerErrorInterceptor(),
   );

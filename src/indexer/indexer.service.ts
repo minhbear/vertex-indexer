@@ -11,11 +11,16 @@ import {
   IdlDappEntity,
   IndexerEntity,
   IndexerTableMetadataEntity,
+  IndexerTriggerEntity,
   ISchemaTableDefinition,
+  TransformerPdaEntity,
 } from 'src/database/entities';
 import { Repository } from 'typeorm';
-import { CreateIndexerSpaceDto, CreateTableDto } from './dtos/request.dto';
-import { ResponseOk } from 'src/common/dtos/common.dto';
+import {
+  CreateIndexerSpaceDto,
+  CreateTableDto,
+  RegisterIndexerWithTransformDto,
+} from './dtos/request.dto';
 import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -31,12 +36,16 @@ export class IndexerService {
     private readonly idlRepository: Repository<IdlDappEntity>,
     @InjectRepository(IndexerTableMetadataEntity)
     private readonly tableMetadataRepository: Repository<IndexerTableMetadataEntity>,
+    @InjectRepository(TransformerPdaEntity)
+    private readonly transformerPdaRepository: Repository<TransformerPdaEntity>,
+    @InjectRepository(IndexerTriggerEntity)
+    private readonly indexerTriggerRepository: Repository<IndexerTriggerEntity>,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(IndexerService.name);
   }
 
-  async createIndexerSpace(input: CreateIndexerSpaceDto): Promise<ResponseOk> {
+  async createIndexerSpace(input: CreateIndexerSpaceDto): Promise<void> {
     const { accountId, idlId, name } = input;
 
     const idl = await this.findIdl(idlId);
@@ -58,14 +67,10 @@ export class IndexerService {
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
       programId: idl.programId,
     });
-
-    return {
-      statusCode: HttpStatus.CREATED,
-    };
   }
 
   @Transactional()
-  async createTable(input: CreateTableDto): Promise<ResponseOk> {
+  async createTable(input: CreateTableDto): Promise<void> {
     const { indexerId, tableName, schema, accountId } = input;
 
     const indexer = await this.findIndexer(indexerId, accountId);
@@ -100,8 +105,6 @@ export class IndexerService {
       tableSchema,
     );
     await this.tableMetadataRepository.query(createTableQuery);
-
-    return { statusCode: HttpStatus.CREATED };
   }
 
   @Transactional()
@@ -109,7 +112,7 @@ export class IndexerService {
     indexerId: number;
     tableName: string;
     accountId: number;
-  }): Promise<ResponseOk> {
+  }): Promise<void> {
     const { indexerId, tableName, accountId } = input;
 
     await this.findIndexer(indexerId, accountId);
@@ -132,8 +135,40 @@ export class IndexerService {
       tableName,
       indexerId,
     });
+  }
 
-    return { statusCode: HttpStatus.OK };
+  @Transactional()
+  async registerIndexerWithTransform(
+    input: RegisterIndexerWithTransformDto,
+    fileContent: string,
+  ): Promise<void> {
+    const indexer = await this.findIndexer(input.indexerId, input.accountId);
+
+    const transformId = (
+      await this.transformerPdaRepository
+        .createQueryBuilder()
+        .insert()
+        .values({
+          indexerId: indexer.id,
+          script: fileContent,
+        })
+        .returning('id')
+        .execute()
+    ).raw[0].id;
+
+    const tableMetadata = await this.findTableMetadata(
+      indexer.id,
+      input.tableId,
+    );
+
+    await this.indexerTriggerRepository.save({
+      indexerId: indexer.id,
+      indexerTableId: tableMetadata.id,
+      pdaName: input.pdaName,
+      pdaPubkey: input.pdaPubkey,
+      triggerType: input.triggerType,
+      transformerPdaId: transformId,
+    });
   }
 
   private generateCreateTableQuery(
@@ -186,5 +221,18 @@ export class IndexerService {
       throw new NotFoundException(`Indexer not found`);
     }
     return indexer;
+  }
+
+  private async findTableMetadata(
+    indexerId: number,
+    tableId: number,
+  ): Promise<IndexerTableMetadataEntity> {
+    const tableMetadata = await this.tableMetadataRepository.findOne({
+      where: { id: tableId, indexerId },
+    });
+    if (!tableMetadata) {
+      throw new NotFoundException(`Table not found`);
+    }
+    return tableMetadata;
   }
 }

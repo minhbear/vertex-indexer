@@ -19,7 +19,7 @@ export class IdlDappController {
   async uploadIdl(
     @Body() body: UploadIdlInput,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<string> {
+  ): Promise<void> {
     if (!body.programId || !body.version || !file) {
       throw new BadRequestException('Missing required fields');
     }
@@ -32,10 +32,6 @@ export class IdlDappController {
         ...body,
         idlJson,
       });
-
-      fs.unlinkSync(file.path);
-
-      return 'SUCCESS';
     } catch (error) {
       throw new BadRequestException('Invalid JSON file');
     }

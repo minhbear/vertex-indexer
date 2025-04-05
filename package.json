@@ -25,7 +25,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky",
-    "format-backend": "prettier --write \"**/*.ts\""
+    "format-backend": "prettier --write \"**/*.ts\"",
+    "typecheck": "tsc --project ./tsconfig.build.json --noEmit"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",

@@ -1,18 +1,25 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Param,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IndexerService } from './indexer.service';
-import { ResponseOk } from 'src/common/dtos/common.dto';
-import { CreateIndexerSpaceDto, CreateTableDto } from './dtos/request.dto';
+import {
+  CreateIndexerSpaceDto,
+  CreateTableDto,
+  RegisterIndexerWithTransformDto,
+} from './dtos/request.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
+import { UploadIdlFile } from 'src/common/interceptors';
+import * as fs from 'fs';
 
 @ApiTags('Indexer')
 @Controller('indexer')
@@ -20,40 +27,59 @@ import { AccessTokenGuard } from 'src/common/guards/auth.guard';
 export class IndexerController {
   constructor(private readonly indexerService: IndexerService) {}
 
-  @ApiResponse({ type: ResponseOk })
   @ApiBearerAuth()
   @Post('/create')
   async createIndexerSpace(
     @Body() input: CreateIndexerSpaceDto,
     @Req() req: RequestWithUser,
-  ): Promise<ResponseOk> {
+  ): Promise<void> {
     input.accountId = req.user.id;
 
     return await this.indexerService.createIndexerSpace(input);
   }
 
-  @ApiResponse({ type: ResponseOk })
   @Post(':indexerId/table/create')
   async createTable(
     @Body() input: CreateTableDto,
     @Param('indexerId') indexerId: string,
-  ): Promise<ResponseOk> {
+  ): Promise<void> {
     input.indexerId = parseInt(indexerId);
 
     return await this.indexerService.createTable(input);
   }
 
-  @ApiResponse({ type: ResponseOk })
   @Delete(':indexerId/table/:tableName')
   async deleteTable(
     @Param('indexerId') indexerId: string,
     @Param('tableName') tableName: string,
     @Req() req: RequestWithUser,
-  ): Promise<ResponseOk> {
+  ): Promise<void> {
     return await this.indexerService.deleteTable({
       accountId: req.user.id,
       indexerId: parseInt(indexerId),
       tableName,
     });
+  }
+
+  @ApiOperation({
+    summary: 'Register PDA of Program to transform data to index',
+  })
+  @Post(':indexerId/register')
+  @UploadIdlFile('transformer')
+  async registerIndexerWithTransform(
+    @Body() input: RegisterIndexerWithTransformDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Param('indexerId') indexerId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    if (!file) {
+      throw new BadRequestException('Missing file transform');
+    }
+
+    const fileContent = fs.readFileSync(file.path, 'utf-8');
+    input.accountId = req.user.id;
+    input.indexerId = parseInt(indexerId);
+
+    await this.indexerService.registerIndexerWithTransform(input, fileContent);
   }
 }
