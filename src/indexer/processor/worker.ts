@@ -1,5 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
 import * as kamino from '../utils-transform/kamino';
+import * as raydium from '../utils-transform/raydium';
 import * as common from '../utils-transform/common';
 
 async function runWorker() {
@@ -15,6 +16,7 @@ async function runWorker() {
   try {
     const utils = {
       kamino,
+      raydium,
       common,
     };
 

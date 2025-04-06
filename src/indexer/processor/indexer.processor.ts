@@ -76,6 +76,24 @@ export class IndexerProcessor extends AbstractJobProcessor {
     return 'FINISHED';
   }
 
+  /**
+   * Sample User Script
+   *    function execute(pdaParser) {
+          const marketPrice = new utils.kamino.Fraction(pdaParser.liquidity.marketPriceSf);
+
+          return {
+            action: 'INSERT',
+            data: {
+              liquidity_available: new utils.common.BN(pdaParser.liquidity.availableAmount).toString(),
+              reserve_address: '711717171717171717'
+            }
+          }
+        }
+   * 
+   * @param pdaParser 
+   * @param transformScript 
+   * @returns 
+   */
   async executeUserScript(
     pdaParser: any,
     transformScript: string,
