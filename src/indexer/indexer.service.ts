@@ -62,11 +62,28 @@ export class IndexerService {
       programId: idl.programId,
       idlId: idl.id,
       accountId,
+      slug,
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
       programId: idl.programId,
     });
+  }
+
+  async getIndexers(accountId: number): Promise<IndexerEntity[]> {
+    const indexers = await this.indexerRepository
+      .createQueryBuilder('indexer')
+      .innerJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
+      .where('indexer.accountId = :accountId', { accountId })
+      .orderBy('indexer.createdAt', 'DESC')
+      .getMany();
+
+    if (!indexers || indexers.length === 0) {
+      return [];
+    }
+
+    return indexers;
   }
 
   @Transactional()

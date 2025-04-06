@@ -13,14 +13,14 @@ export class IdlDappService {
     private readonly idlDappRepository: Repository<IdlDappEntity>,
   ) {}
 
-  async createIdlDapp(input: UploadIdlInput): Promise<void> {
+  async createIdlDapp(input: UploadIdlInput) {
     const hashId = generateIdlHash(input.programId, input.version);
     const existingIdl = await this.idlDappRepository.findOneBy({ hashId });
     if (!isEmpty(existingIdl)) {
       throw new BadRequestException('IDL already exists');
     }
 
-    await this.idlDappRepository.save({
+    return await this.idlDappRepository.save({
       idlJson: input.idlJson,
       name: input.name,
       programId: input.programId,

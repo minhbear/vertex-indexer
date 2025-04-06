@@ -3,13 +3,20 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
   Req,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
@@ -23,7 +30,7 @@ import * as fs from 'fs';
 
 @ApiTags('Indexer')
 @Controller('indexer')
-@UseGuards(AccessTokenGuard)
+// @UseGuards(AccessTokenGuard)
 export class IndexerController {
   constructor(private readonly indexerService: IndexerService) {}
 
@@ -33,9 +40,24 @@ export class IndexerController {
     @Body() input: CreateIndexerSpaceDto,
     @Req() req: RequestWithUser,
   ): Promise<void> {
-    input.accountId = req.user.id;
+    // input.accountId = req.user.id;
+    input.accountId = 1;
 
     return await this.indexerService.createIndexerSpace(input);
+  }
+
+  @ApiOperation({ summary: 'Get indexers by accountId' })
+  @ApiResponse({ status: 200, description: 'List of indexers' })
+  @ApiResponse({ status: 400, description: 'Invalid accountId' })
+  @Get('/')
+  async getIndexersByAccountId(@Req() req: RequestWithUser): Promise<any> {
+    // const accountId = req.user.id;
+    const accountId = 1;
+    if (!accountId) {
+      throw new BadRequestException('accountId is required');
+    }
+
+    return await this.indexerService.getIndexers(accountId);
   }
 
   @Post(':indexerId/table/create')
@@ -77,7 +99,8 @@ export class IndexerController {
     }
 
     const fileContent = fs.readFileSync(file.path, 'utf-8');
-    input.accountId = req.user.id;
+    // input.accountId = req.user.id;
+    input.accountId = 1;
     input.indexerId = parseInt(indexerId);
 
     await this.indexerService.registerIndexerWithTransform(input, fileContent);
