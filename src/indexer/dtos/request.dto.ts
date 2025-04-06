@@ -4,8 +4,6 @@ import {
   IsEnum,
   IsIn,
   IsNotEmpty,
-  IsNumber,
-  IsNumberString,
   IsOptional,
   IsString,
   ValidateNested,
@@ -22,9 +20,10 @@ export class CreateIndexerSpaceDto {
   name: string;
 
   @ApiProperty()
-  @IsString()
   @IsNotEmpty()
-  idlId: string;
+  @IsString()
+  @Transform(({ value }) => parseInt(value))
+  idlId: number;
 
   @Exclude()
   accountId: number;

@@ -48,7 +48,7 @@ export class IndexerService {
   async createIndexerSpace(input: CreateIndexerSpaceDto): Promise<void> {
     const { accountId, idlId, name } = input;
 
-    const idl = await this.findIdl(Number(idlId));
+    const idl = await this.findIdl(idlId);
 
     const slug = createSlug(name);
     const exitIndexerName = await this.indexerRepository.findOne({
@@ -73,7 +73,7 @@ export class IndexerService {
   async getIndexers(accountId: number): Promise<IndexerEntity[]> {
     const indexers = await this.indexerRepository
       .createQueryBuilder('indexer')
-      .leftJoinAndSelect('indexer.idl', 'idl')
+      .innerJoinAndSelect('indexer.idl', 'idl')
       .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
       .where('indexer.accountId = :accountId', { accountId })
       .orderBy('indexer.createdAt', 'DESC')
