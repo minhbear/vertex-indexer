@@ -10,6 +10,7 @@ import {
 } from 'src/common/queue';
 import { PdaProcessor } from './processor/pda.processor';
 import { IndexerProcessor } from './processor/indexer.processor';
+import { IndexerTableService } from './indexer-table.service';
 
 @Module({
   imports: [
@@ -17,6 +18,11 @@ import { IndexerProcessor } from './processor/indexer.processor';
     BullModule.registerQueue(PdaSystemQueueConfig, IndexerSystemQueueConfig),
   ],
   controllers: [IndexerController],
-  providers: [IndexerService, PdaProcessor, IndexerProcessor],
+  providers: [
+    IndexerService,
+    IndexerTableService,
+    PdaProcessor,
+    IndexerProcessor,
+  ],
 })
 export class IndexerModule {}

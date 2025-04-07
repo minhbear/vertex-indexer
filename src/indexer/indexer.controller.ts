@@ -21,18 +21,27 @@ import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
   CreateTableDto,
+  ExecuteQueryDto,
   RegisterIndexerWithTransformDto,
 } from './dtos/request.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
 import { UploadIdlFile } from 'src/common/interceptors';
 import * as fs from 'fs';
+import {
+  IndexerTableMetadataResponse,
+  ResultExecuteQueryResponse,
+} from './dtos/response.dto';
+import { IndexerTableService } from './indexer-table.service';
 
 @ApiTags('Indexer')
-@Controller('indexer')
+@Controller('indexers')
 // @UseGuards(AccessTokenGuard)
 export class IndexerController {
-  constructor(private readonly indexerService: IndexerService) {}
+  constructor(
+    private readonly indexerService: IndexerService,
+    private readonly indexerTableService: IndexerTableService,
+  ) {}
 
   @ApiBearerAuth()
   @Post('/create')
@@ -60,7 +69,7 @@ export class IndexerController {
     return await this.indexerService.getIndexers(accountId);
   }
 
-  @Post(':indexerId/table/create')
+  @Post(':indexerId/tables/create')
   async createTable(
     @Body() input: CreateTableDto,
     @Param('indexerId') indexerId: string,
@@ -70,7 +79,7 @@ export class IndexerController {
     return await this.indexerService.createTable(input);
   }
 
-  @Delete(':indexerId/table/:tableName')
+  @Delete(':indexerId/tables/:tableName')
   async deleteTable(
     @Param('indexerId') indexerId: string,
     @Param('tableName') tableName: string,
@@ -81,6 +90,23 @@ export class IndexerController {
       indexerId: parseInt(indexerId),
       tableName,
     });
+  }
+
+  @ApiResponse({ status: 200, type: [IndexerTableMetadataResponse] })
+  @Get(':indexerId/tables')
+  async getAllTablesInIndexer(
+    @Param('indexerId') indexerIdStr: string,
+    @Req() req: RequestWithUser,
+  ): Promise<IndexerTableMetadataResponse[]> {
+    // const accountId = req.user.id;
+    const accountId = 1;
+    const indexerId = parseInt(indexerIdStr);
+
+    const tables = await this.indexerService.getAllTablesInIndexer(
+      indexerId,
+      accountId,
+    );
+    return tables.map((table) => new IndexerTableMetadataResponse(table));
   }
 
   @ApiOperation({
@@ -104,5 +130,20 @@ export class IndexerController {
     input.indexerId = parseInt(indexerId);
 
     await this.indexerService.registerIndexerWithTransform(input, fileContent);
+  }
+
+  @ApiResponse({
+    status: 200,
+    type: ResultExecuteQueryResponse,
+  })
+  @ApiOperation({
+    summary: 'Execute query on indexer table',
+  })
+  @Post('/query')
+  async executeQuery(
+    @Body() input: ExecuteQueryDto,
+    @Req() req: RequestWithUser,
+  ): Promise<ResultExecuteQueryResponse> {
+    return await this.indexerTableService.executeQuery(input.query);
   }
 }

@@ -154,6 +154,18 @@ export class IndexerService {
     });
   }
 
+  async getAllTablesInIndexer(
+    indexerId: number,
+    accountId: number,
+  ): Promise<IndexerTableMetadataEntity[]> {
+    const indexer = await this.findIndexer(indexerId, accountId);
+
+    return await this.tableMetadataRepository.find({
+      where: { indexerId: indexer.id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   @Transactional()
   async registerIndexerWithTransform(
     input: RegisterIndexerWithTransformDto,

@@ -7,10 +7,16 @@ import {
 } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { IndexerEntity } from './indexer.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
-export interface ISchemaTableDefinition {
+export class ISchemaTableDefinition {
+  @ApiProperty()
   name: string;
+
+  @ApiProperty()
   type: string;
+
+  @ApiProperty()
   nullable: boolean;
 }
 

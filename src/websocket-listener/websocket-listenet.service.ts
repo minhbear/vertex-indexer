@@ -34,46 +34,38 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    this.logger.info(`Start Sync PDA at ${new Date()}`);
-    const logger = this.logger;
-
-    this.programIds = await this.getAllProgramId();
-
-    this.rpcSocket.onopen = (greeting) => {
-      logger.info({ greeting });
-      this.programSubscribe(this.programIds);
-    };
-
-    this.rpcSocket.onmessage = async (event) => {
-      const eventData = JSON.parse(
-        event.data as any,
-      ) as ILogsNotificationRPCResponse;
-
-      if (eventData.method === 'programNotification') {
-        const programId = eventData.params?.result?.value?.account?.owner;
-        const pdaPubkeyStr = eventData.params?.result?.value?.pubkey;
-
-        const jobId = `${SystemQueueJob.PDA_CHANGE}-${programId}-${pdaPubkeyStr}`;
-        await this.pdaSystemQueue.add(
-          SystemQueueJob.PDA_CHANGE,
-          {
-            pdaPubkeyStr,
-            programId,
-          } as IPdaChangeJob,
-          {
-            jobId,
-          },
-        );
-
-        this.logger.info('Finish add job to queue: ', jobId);
-      }
-    };
-
-    const keepAliveHandler = () => {
-      this.rpcSocket.send('ping');
-    };
-
-    this.interval = setInterval(keepAliveHandler, this.KEEP_ALIVE_INTERVAL);
+    // this.logger.info(`Start Sync PDA at ${new Date()}`);
+    // const logger = this.logger;
+    // this.programIds = await this.getAllProgramId();
+    // this.rpcSocket.onopen = (greeting) => {
+    //   logger.info({ greeting });
+    //   this.programSubscribe(this.programIds);
+    // };
+    // this.rpcSocket.onmessage = async (event) => {
+    //   const eventData = JSON.parse(
+    //     event.data as any,
+    //   ) as ILogsNotificationRPCResponse;
+    //   if (eventData.method === 'programNotification') {
+    //     const programId = eventData.params?.result?.value?.account?.owner;
+    //     const pdaPubkeyStr = eventData.params?.result?.value?.pubkey;
+    //     const jobId = `${SystemQueueJob.PDA_CHANGE}-${programId}-${pdaPubkeyStr}`;
+    //     await this.pdaSystemQueue.add(
+    //       SystemQueueJob.PDA_CHANGE,
+    //       {
+    //         pdaPubkeyStr,
+    //         programId,
+    //       } as IPdaChangeJob,
+    //       {
+    //         jobId,
+    //       },
+    //     );
+    //     this.logger.info('Finish add job to queue: ', jobId);
+    //   }
+    // };
+    // const keepAliveHandler = () => {
+    //   this.rpcSocket.send('ping');
+    // };
+    // this.interval = setInterval(keepAliveHandler, this.KEEP_ALIVE_INTERVAL);
   }
 
   @OnEvent(IndexerEventName.INDEXER_CREATED)

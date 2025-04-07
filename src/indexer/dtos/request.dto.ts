@@ -93,3 +93,11 @@ export class RegisterIndexerWithTransformDto {
 
   accountId: number;
 }
+
+export class ExecuteQueryDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  query: string;
+}
