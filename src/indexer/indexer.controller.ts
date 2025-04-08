@@ -30,6 +30,7 @@ import { UploadIdlFile } from 'src/common/interceptors';
 import * as fs from 'fs';
 import {
   IndexerTableMetadataResponse,
+  IndexerTriggerAndTransformerResponse,
   ResultExecuteQueryResponse,
 } from './dtos/response.dto';
 import { IndexerTableService } from './indexer-table.service';
@@ -57,7 +58,6 @@ export class IndexerController {
 
   @ApiOperation({ summary: 'Get indexers by accountId' })
   @ApiResponse({ status: 200, description: 'List of indexers' })
-  @ApiResponse({ status: 400, description: 'Invalid accountId' })
   @Get('/')
   async getIndexersByAccountId(@Req() req: RequestWithUser): Promise<any> {
     // const accountId = req.user.id;
@@ -67,6 +67,28 @@ export class IndexerController {
     }
 
     return await this.indexerService.getIndexers(accountId);
+  }
+
+  @ApiOperation({ summary: 'Get all ' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of indexers',
+    type: [IndexerTableMetadataResponse],
+  })
+  @Get(':indexerId/tables/:tableId/trigger-transformer')
+  async getAllIndexerTriggerAndTransformOfTable(
+    @Param('indexerId') indexerId: string,
+    @Param('tableId') tableId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<IndexerTriggerAndTransformerResponse[]> {
+    return (
+      await this.indexerService.getAllIndexerTriggerAndTransformOfTable({
+        indexerId: parseInt(indexerId),
+        tableId: parseInt(tableId),
+        // accountId: req.user.id,
+        accountId: 1,
+      })
+    ).map((c) => new IndexerTriggerAndTransformerResponse(c));
   }
 
   @Post(':indexerId/tables/create')

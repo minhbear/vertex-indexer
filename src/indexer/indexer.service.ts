@@ -86,6 +86,25 @@ export class IndexerService {
     return indexers;
   }
 
+  async getAllIndexerTriggerAndTransformOfTable(input: {
+    indexerId: number;
+    accountId: number;
+    tableId: number;
+  }): Promise<IndexerTriggerEntity[]> {
+    const { indexerId, tableId, accountId } = input;
+
+    await this.findIndexer(indexerId, accountId);
+
+    return await this.indexerTriggerRepository
+      .createQueryBuilder('trigger')
+      .innerJoin('trigger.indexerTable', 'table')
+      .innerJoinAndSelect('trigger.transformerPda', 'transformer')
+      .where('trigger.indexerId = :indexerId', { indexerId })
+      .andWhere('table.id = :tableId', { tableId })
+      .orderBy('trigger.createdAt', 'DESC')
+      .getMany();
+  }
+
   @Transactional()
   async createTable(input: CreateTableDto): Promise<void> {
     const { indexerId, tableName, schema, accountId } = input;
