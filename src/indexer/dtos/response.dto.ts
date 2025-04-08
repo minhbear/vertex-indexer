@@ -9,6 +9,9 @@ import {
 
 export class IndexerTableMetadataResponse {
   @ApiProperty()
+  id: number;
+
+  @ApiProperty()
   tableName: string;
 
   @ApiProperty()
@@ -23,6 +26,7 @@ export class IndexerTableMetadataResponse {
   indexerId: number;
 
   constructor(tableMetadata: IndexerTableMetadataEntity) {
+    this.id = tableMetadata.id;
     this.tableName = tableMetadata.tableName;
     this.fullTableName = tableMetadata.fullTableName;
     this.schema = tableMetadata.schema;
