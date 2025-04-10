@@ -8,6 +8,7 @@ import { AccountModule } from 'src/account/account.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AccessTokenStrategy } from 'src/common/guards/auth.strategy';
 import { JWT_ACCESS_SECRET } from 'src/app.environment';
+import { GoogleStrategy } from 'src/common/guards/google.strategy';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { JWT_ACCESS_SECRET } from 'src/app.environment';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AccessTokenStrategy],
+  providers: [AuthService, AccessTokenStrategy, GoogleStrategy],
 })
 export class AuthModule {}

@@ -24,6 +24,10 @@ export class AuthService {
     this.logger.setContext(AuthService.name);
   }
 
+  async validateGoogleUserEmail(email: string) {
+    return await this.accountService.findOrCreateAccountByEmail(email);
+  }
+
   async getNonce(walletAddress: string): Promise<GetNonceResponse> {
     let nonce: string = await this.cacheManager.get(
       `wallet:${walletAddress}:nonce`,
@@ -73,12 +77,13 @@ export class AuthService {
     return this.generateTokens(account.id);
   }
 
-  private generateTokens(accountId: number): LoginResponse {
+  generateTokens(accountId: number): LoginResponse {
     //TODO [accessToken, refreshToken] = await Promise.all(signAsync)
     const accessToken = this.jwtService.sign(
       { sub: accountId },
       {
         secret: JWT_ACCESS_SECRET,
+        expiresIn: '7d',
       },
     );
 

@@ -2,15 +2,25 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Post,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import { IdlDappService } from './idl-dapp.service';
 import { UploadIdlFile } from 'src/common/interceptors';
 import { UploadIdlInput } from './idl-dapp.interface';
-import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+} from '@nestjs/swagger';
+import { AccessTokenGuard } from 'src/common/guards/auth.guard';
 
+@ApiBearerAuth()
+@UseGuards(AccessTokenGuard)
 @Controller('idl-dapp')
 export class IdlDappController {
   constructor(private readonly idlDappService: IdlDappService) {}
@@ -53,5 +63,10 @@ export class IdlDappController {
     } catch (error) {
       throw new BadRequestException('Invalid JSON file');
     }
+  }
+
+  @Get('')
+  async getAllIdls() {
+    return await this.idlDappService.getAllIdls();
   }
 }

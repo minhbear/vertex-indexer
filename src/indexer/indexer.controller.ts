@@ -37,7 +37,7 @@ import { IndexerTableService } from './indexer-table.service';
 
 @ApiTags('Indexer')
 @Controller('indexers')
-// @UseGuards(AccessTokenGuard)
+@UseGuards(AccessTokenGuard)
 export class IndexerController {
   constructor(
     private readonly indexerService: IndexerService,
@@ -50,8 +50,7 @@ export class IndexerController {
     @Body() input: CreateIndexerSpaceDto,
     @Req() req: RequestWithUser,
   ): Promise<void> {
-    // input.accountId = req.user.id;
-    input.accountId = 1;
+    input.accountId = req.user.id;
 
     return await this.indexerService.createIndexerSpace(input);
   }
@@ -60,16 +59,11 @@ export class IndexerController {
   @ApiResponse({ status: 200, description: 'List of indexers' })
   @Get('/')
   async getIndexersByAccountId(@Req() req: RequestWithUser): Promise<any> {
-    // const accountId = req.user.id;
-    const accountId = 1;
-    if (!accountId) {
-      throw new BadRequestException('accountId is required');
-    }
-
+    const accountId = req.user.id;
     return await this.indexerService.getIndexers(accountId);
   }
 
-  @ApiOperation({ summary: 'Get all ' })
+  @ApiOperation({ summary: 'Get all Trigger and Transformer of Table' })
   @ApiResponse({
     status: 200,
     description: 'List of indexers',
@@ -85,8 +79,7 @@ export class IndexerController {
       await this.indexerService.getAllIndexerTriggerAndTransformOfTable({
         indexerId: parseInt(indexerId),
         tableId: parseInt(tableId),
-        // accountId: req.user.id,
-        accountId: 1,
+        accountId: req.user.id,
       })
     ).map((c) => new IndexerTriggerAndTransformerResponse(c));
   }
@@ -120,8 +113,7 @@ export class IndexerController {
     @Param('indexerId') indexerIdStr: string,
     @Req() req: RequestWithUser,
   ): Promise<IndexerTableMetadataResponse[]> {
-    // const accountId = req.user.id;
-    const accountId = 1;
+    const accountId = req.user.id;
     const indexerId = parseInt(indexerIdStr);
 
     const tables = await this.indexerService.getAllTablesInIndexer(
@@ -147,8 +139,7 @@ export class IndexerController {
     }
 
     const fileContent = fs.readFileSync(file.path, 'utf-8');
-    // input.accountId = req.user.id;
-    input.accountId = 1;
+    input.accountId = req.user.id;
     input.indexerId = parseInt(indexerId);
 
     await this.indexerService.registerIndexerWithTransform(input, fileContent);

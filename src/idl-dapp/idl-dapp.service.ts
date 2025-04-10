@@ -28,4 +28,8 @@ export class IdlDappService {
       hashId,
     });
   }
+
+  async getAllIdls(): Promise<IdlDappEntity[]> {
+    return await this.idlDappRepository.find();
+  }
 }

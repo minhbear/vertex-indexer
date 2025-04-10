@@ -11,6 +11,23 @@ export class AccountService {
     private readonly accountRepository: Repository<AccountEntity>,
   ) {}
 
+  async findOrCreateAccountByEmail(email: string): Promise<AccountEntity> {
+    const account = await this.accountRepository
+      .createQueryBuilder('account')
+      .where('account.email = :email', { email })
+      .getOne();
+    if (!isNil(account)) {
+      return account;
+    }
+    const newAccount = await this.accountRepository.save(
+      this.accountRepository.create({
+        email: email,
+        walletAddress: '',
+      }),
+    );
+    return newAccount;
+  }
+
   async findOrCreateAccountByWalletAddress(
     walletAddress: string,
   ): Promise<AccountEntity> {

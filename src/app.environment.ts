@@ -62,3 +62,12 @@ export const WALLET_NONCE_TTL: number =
   parseInt(process.env.WALLET_NONCE_TTL, 10) || 3000000;
 export const JWT_ACCESS_SECRET =
   process.env.JWT_ACCESS_SECRET || 'access-secret';
+
+// Google
+export const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID || 'google-client-id';
+export const GOOGLE_CLIENT_SECRET =
+  process.env.GOOGLE_CLIENT_SECRET || 'google-client-secret';
+export const GOOGLE_CALLBACK_URL =
+  process.env.GOOGLE_CALLBACK_URL || 'google-callback-url';
+export const FE_REDIRECT_URL = process.env.FE_REDIRECT_URL || 'fe-redirect-url';
