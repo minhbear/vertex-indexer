@@ -20,7 +20,6 @@ export class AccountEntity extends AbstractEntity {
     type: 'varchar',
     length: 255,
     nullable: false,
-    unique: true,
   })
   walletAddress: string;
 }
