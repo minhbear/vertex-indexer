@@ -61,7 +61,7 @@ export class IdlDappController {
         idlJson,
       });
     } catch (error) {
-      throw new BadRequestException('Invalid JSON file');
+      throw new BadRequestException(error);
     }
   }
 

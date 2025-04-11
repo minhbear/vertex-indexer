@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TriggerType } from 'src/common/enum/common.enum';
 import {
+  IndexerEntity,
   IndexerTableMetadataEntity,
   IndexerTriggerEntity,
   ISchemaTableDefinition,
@@ -84,5 +85,30 @@ export class IndexerTriggerAndTransformerResponse {
     this.indexerTableId = trigger.indexerTableId;
     this.indexerId = trigger.indexerId;
     this.transformerPda = new TransformerResponse(trigger.transformerPda);
+  }
+}
+
+export class IndexerResponse {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty()
+  programId: string;
+
+  @ApiProperty()
+  idlId: number;
+
+  constructor(indexer: IndexerEntity) {
+    this.id = indexer.id;
+    this.name = indexer.name;
+    this.slug = indexer.slug;
+    this.programId = indexer.programId;
+    this.idlId = indexer.idlId;
   }
 }

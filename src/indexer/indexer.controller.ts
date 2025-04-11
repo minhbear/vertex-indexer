@@ -29,6 +29,7 @@ import { AccessTokenGuard } from 'src/common/guards/auth.guard';
 import { UploadIdlFile } from 'src/common/interceptors';
 import * as fs from 'fs';
 import {
+  IndexerResponse,
   IndexerTableMetadataResponse,
   IndexerTriggerAndTransformerResponse,
   ResultExecuteQueryResponse,
@@ -56,11 +57,19 @@ export class IndexerController {
   }
 
   @ApiOperation({ summary: 'Get indexers by accountId' })
-  @ApiResponse({ status: 200, description: 'List of indexers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of indexers',
+    type: [IndexerResponse],
+  })
   @Get('/')
-  async getIndexersByAccountId(@Req() req: RequestWithUser): Promise<any> {
+  async getIndexersByAccountId(
+    @Req() req: RequestWithUser,
+  ): Promise<IndexerResponse[]> {
     const accountId = req.user.id;
-    return await this.indexerService.getIndexers(accountId);
+    return (await this.indexerService.getIndexers(accountId)).map((indexer) => {
+      return new IndexerResponse(indexer);
+    });
   }
 
   @ApiOperation({ summary: 'Get all Trigger and Transformer of Table' })

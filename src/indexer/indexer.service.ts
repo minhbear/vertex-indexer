@@ -79,10 +79,6 @@ export class IndexerService {
       .orderBy('indexer.createdAt', 'DESC')
       .getMany();
 
-    if (!indexers || indexers.length === 0) {
-      return [];
-    }
-
     return indexers;
   }
 
