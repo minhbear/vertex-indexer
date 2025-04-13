@@ -14,7 +14,7 @@ export class AutoGenerate1744532894000 implements MigrationInterface {
       `ALTER TABLE "indexer" ALTER COLUMN "cluster" SET DEFAULT 'mainnet'`,
     );
     await queryRunner.query(
-      `ALTER TABLE "indexer" ALTER COLUMN "rpc_url" SET DEFAULT 'https://api.mainnet-beta.solana.com'`,
+      `ALTER TABLE "indexer" ALTER COLUMN "rpc_url" SET DEFAULT 'api.mainnet-beta.solana.com'`,
     );
   }
 

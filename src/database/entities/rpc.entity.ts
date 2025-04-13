@@ -27,4 +27,12 @@ export class RpcEntity {
     default: Cluster.MAINNET,
   })
   cluster: Cluster;
+
+  @Column({
+    name: 'api_key',
+    type: 'varchar',
+    nullable: false,
+    default: '',
+  })
+  apiKey: string;
 }

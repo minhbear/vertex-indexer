@@ -25,6 +25,11 @@ export class CreateIndexerSpaceDto {
   @IsNumber()
   idlId: number;
 
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumber()
+  rpcId: number;
+
   @Exclude()
   accountId: number;
 }

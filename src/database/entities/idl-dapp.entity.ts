@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { Idl } from '@coral-xyz/anchor';
+import { Cluster } from './rpc.entity';
 
 @Entity({
   name: 'idl_dapp',
@@ -48,4 +49,13 @@ export class IdlDappEntity extends AbstractEntity {
     nullable: false,
   })
   programId: string;
+
+  @Column({
+    name: 'network',
+    type: 'varchar',
+    length: 10,
+    nullable: false,
+    default: Cluster.MAINNET,
+  })
+  network: Cluster;
 }

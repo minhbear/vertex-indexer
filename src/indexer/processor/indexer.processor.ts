@@ -8,7 +8,6 @@ import {
 } from 'src/common/queue';
 import { ITransformResult, IUpdateIndexerJob } from '../interfaces';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { RPC_URL } from 'src/app.environment';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,8 +19,6 @@ import { serializePda } from 'src/common/utils';
 
 @Processor(SystemQueue.INDEXER_SYSTEM)
 export class IndexerProcessor extends AbstractJobProcessor {
-  private readonly connection: Connection;
-
   constructor(
     @InjectIndexerSystemQueue()
     private readonly indexerSystemQueue: Queue,
@@ -32,7 +29,6 @@ export class IndexerProcessor extends AbstractJobProcessor {
   ) {
     super(logger, indexerSystemQueue);
 
-    this.connection = new Connection(RPC_URL, { commitment: 'confirmed' });
     this.logger.setContext(IndexerProcessor.name);
   }
 
@@ -44,8 +40,12 @@ export class IndexerProcessor extends AbstractJobProcessor {
       const { indexerId, pdaPubkeyStr } = job.data;
 
       const indexer = await this.getIndexer(indexerId, pdaPubkeyStr);
+      const connection = new Connection(indexer.rpcUrl, {
+        commitment: 'confirmed',
+      });
+
       const idlJson = indexer.idl.idlJson;
-      const provider = new AnchorProvider(this.connection, null, {});
+      const provider = new AnchorProvider(connection, null, {});
       const program = new Program(idlJson, indexer.programId, provider);
       const pdaPubkey = new PublicKey(pdaPubkeyStr);
       const pdaName = indexer.indexerTriggers[0].pdaName;

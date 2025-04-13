@@ -25,11 +25,13 @@ import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IndexerEventName } from 'src/common/enum/event.enum';
+import { RpcService } from 'src/rpc/rpc.service';
 
 @Injectable()
 export class IndexerService {
   constructor(
-    protected readonly eventEmitter: EventEmitter2,
+    private readonly rpcService: RpcService,
+    private readonly eventEmitter: EventEmitter2,
     @InjectRepository(IndexerEntity)
     private readonly indexerRepository: Repository<IndexerEntity>,
     @InjectRepository(IdlDappEntity)
@@ -46,7 +48,9 @@ export class IndexerService {
   }
 
   async createIndexerSpace(input: CreateIndexerSpaceDto): Promise<void> {
-    const { accountId, idlId, name } = input;
+    const { accountId, idlId, name, rpcId } = input;
+
+    const rpc = await this.rpcService.findById(rpcId);
 
     const idl = await this.findIdl(idlId);
 
@@ -63,10 +67,13 @@ export class IndexerService {
       idlId: idl.id,
       accountId,
       slug,
+      cluster: rpc.cluster,
+      rpcUrl: this.rpcService.getFullHttpUrl(rpc),
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
       programId: idl.programId,
+      cluster: rpc.cluster,
     });
   }
 

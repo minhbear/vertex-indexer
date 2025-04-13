@@ -5,18 +5,18 @@ export class Migrations1744532492730 implements MigrationInterface {
     await queryRunner.query(`
        INSERT INTO "rpc" ("url", "cluster")
        VALUES 
-        ('https://api.mainnet-beta.solana.com', 'mainnet'),
-        ('https://api.testnet.solana.com', 'testnet'),
-        ('https://api.devnet.solana.com', 'devnet')
+        ('api.mainnet-beta.solana.com', 'mainnet'),
+        ('api.testnet.solana.com', 'testnet'),
+        ('api.devnet.solana.com', 'devnet')
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       DELETE FROM "rpc" WHERE "url" IN (
-        'https://api.mainnet-beta.solana.com',
-        'https://api.testnet.solana.com',
-        'https://api.devnet.solana.com'
+        'api.mainnet-beta.solana.com',
+        'api.testnet.solana.com',
+        'api.devnet.solana.com'
       );
     `);
   }
