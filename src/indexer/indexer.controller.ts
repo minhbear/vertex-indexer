@@ -35,10 +35,11 @@ import {
   ResultExecuteQueryResponse,
 } from './dtos/response.dto';
 import { IndexerTableService } from './indexer-table.service';
+import { IndexerGuard } from 'src/common/guards/indexer.guard';
 
 @ApiTags('Indexer')
 @Controller('indexers')
-@UseGuards(AccessTokenGuard)
+@UseGuards(AccessTokenGuard, IndexerGuard)
 export class IndexerController {
   constructor(
     private readonly indexerService: IndexerService,
@@ -51,9 +52,7 @@ export class IndexerController {
     @Body() input: CreateIndexerSpaceDto,
     @Req() req: RequestWithUser,
   ): Promise<void> {
-    input.accountId = req.user.id;
-
-    return await this.indexerService.createIndexerSpace(input);
+    return await this.indexerService.createIndexerSpace(input, req.user);
   }
 
   @ApiOperation({ summary: 'Get indexers by accountId' })
@@ -97,10 +96,11 @@ export class IndexerController {
   async createTable(
     @Body() input: CreateTableDto,
     @Param('indexerId') indexerId: string,
+    @Req() req: RequestWithUser,
   ): Promise<void> {
     input.indexerId = parseInt(indexerId);
 
-    return await this.indexerService.createTable(input);
+    return await this.indexerService.createTable(input, req.user);
   }
 
   @Delete(':indexerId/tables/:tableName')

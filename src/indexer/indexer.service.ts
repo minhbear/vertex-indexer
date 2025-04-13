@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { PinoLogger } from 'nestjs-pino';
 import {
+  AccountEntity,
   IdlDappEntity,
   IndexerEntity,
   IndexerTableMetadataEntity,
@@ -47,8 +48,11 @@ export class IndexerService {
     this.logger.setContext(IndexerService.name);
   }
 
-  async createIndexerSpace(input: CreateIndexerSpaceDto): Promise<void> {
-    const { accountId, idlId, name, rpcId } = input;
+  async createIndexerSpace(
+    input: CreateIndexerSpaceDto,
+    account: AccountEntity,
+  ): Promise<void> {
+    const { idlId, name, rpcId, description } = input;
 
     const rpc = await this.rpcService.findById(rpcId);
 
@@ -56,7 +60,7 @@ export class IndexerService {
 
     const slug = createSlug(name);
     const exitIndexerName = await this.indexerRepository.findOne({
-      where: { slug, accountId },
+      where: { slug, accountId: account.id },
     });
     if (exitIndexerName) {
       throw new BadRequestException('Indexer name already exists');
@@ -65,10 +69,11 @@ export class IndexerService {
       name,
       programId: idl.programId,
       idlId: idl.id,
-      accountId,
+      accountId: account.id,
       slug,
       cluster: rpc.cluster,
       rpcUrl: this.rpcService.getFullHttpUrl(rpc),
+      description,
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
@@ -109,10 +114,13 @@ export class IndexerService {
   }
 
   @Transactional()
-  async createTable(input: CreateTableDto): Promise<void> {
-    const { indexerId, tableName, schema, accountId } = input;
+  async createTable(
+    input: CreateTableDto,
+    account: AccountEntity,
+  ): Promise<void> {
+    const { indexerId, tableName, schema } = input;
 
-    const indexer = await this.findIndexer(indexerId, accountId);
+    const indexer = await this.findIndexer(indexerId, account.id);
 
     const existingTable = await this.tableMetadataRepository.findOne({
       where: { tableName, indexerId },
@@ -132,7 +140,7 @@ export class IndexerService {
 
     const newTableMetadata = this.tableMetadataRepository.create({
       tableName,
-      fullTableName: `indexer_${indexer.slug}_${tableName}`,
+      fullTableName: `vertex.${account.userName}.${indexer.slug}.${tableName}`,
       schema: tableSchema,
       indexerId,
       indexer,

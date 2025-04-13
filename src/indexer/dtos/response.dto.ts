@@ -96,6 +96,9 @@ export class IndexerResponse {
   name: string;
 
   @ApiProperty()
+  description: string;
+
+  @ApiProperty()
   slug: string;
 
   @ApiProperty()
@@ -104,11 +107,16 @@ export class IndexerResponse {
   @ApiProperty()
   idlId: number;
 
+  @ApiProperty()
+  cluster: string;
+
   constructor(indexer: IndexerEntity) {
     this.id = indexer.id;
     this.name = indexer.name;
+    this.description = indexer.description;
     this.slug = indexer.slug;
     this.programId = indexer.programId;
     this.idlId = indexer.idlId;
+    this.cluster = indexer.cluster;
   }
 }

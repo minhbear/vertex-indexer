@@ -28,15 +28,6 @@ export class IndexerEntity extends AbstractEntity {
   name: string;
 
   @Column({
-    type: 'varchar',
-    name: 'display_name',
-    length: 255,
-    nullable: false,
-    unique: true,
-  })
-  displayName: string;
-
-  @Column({
     name: 'description',
     type: 'text',
     nullable: false,
@@ -94,7 +85,7 @@ export class IndexerEntity extends AbstractEntity {
   })
   accountId: number;
 
-  @ManyToOne(() => IndexerEntity)
+  @ManyToOne(() => AccountEntity)
   @JoinColumn({ name: 'account_id', referencedColumnName: 'id' })
   account: AccountEntity;
 

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Exclude, Transform, Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsIn,
@@ -30,8 +30,11 @@ export class CreateIndexerSpaceDto {
   @IsNumber()
   rpcId: number;
 
-  @Exclude()
-  accountId: number;
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  description: string;
 }
 
 export class TableSchemaDto {
@@ -67,8 +70,6 @@ export class CreateTableDto {
   @ValidateNested({ each: true })
   @Type(() => TableSchemaDto)
   schema: TableSchemaDto[];
-
-  accountId: number;
 }
 
 export class RegisterIndexerWithTransformDto {
