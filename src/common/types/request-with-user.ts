@@ -1,5 +1,5 @@
+import { AccountEntity } from 'src/database/entities';
+
 export interface RequestWithUser extends Request {
-  user: {
-    id: number;
-  };
+  user: AccountEntity;
 }
