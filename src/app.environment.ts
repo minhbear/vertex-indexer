@@ -49,10 +49,6 @@ export const SYNC_TRANSACTION_JOB_BACKOFF =
 export const BALANCE_UPDATE_DELAY = 500;
 export const ACCOUNT_LEVEL_UPDATE_DELAY = 500;
 
-// RPC
-export const RPC_URL = process.env.RPC_URL || '';
-export const WS_RPC_URL = process.env.WS_RPC_URL || '';
-
 // PDA Change
 export const GET_INDEXER_PAGING =
   parseInt(process.env.GET_INDEXER_PAGING) || 10;

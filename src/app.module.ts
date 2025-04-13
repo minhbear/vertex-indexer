@@ -19,6 +19,7 @@ import { IndexerModule } from './indexer/indexer.module';
 import { IdlDappModule } from './idl-dapp/idl-dapp.module';
 import { AuthModule } from './auth/auth.module';
 import { AccountModule } from './account/account.module';
+import { RpcModule } from './rpc/rpc.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AccountModule } from './account/account.module';
     IdlDappModule,
     AuthModule,
     AccountModule,
+    RpcModule,
   ],
   providers: [],
 })
