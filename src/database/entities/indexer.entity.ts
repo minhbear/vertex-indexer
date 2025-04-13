@@ -10,6 +10,7 @@ import { AbstractEntity } from './abstract.entity';
 import { AccountEntity } from './account.entity';
 import { IdlDappEntity } from './idl-dapp.entity';
 import { IndexerTriggerEntity } from './indexer-trigger.entity';
+import { Cluster } from './rpc.entity';
 
 @Entity({
   name: 'indexer',
@@ -41,6 +42,24 @@ export class IndexerEntity extends AbstractEntity {
     nullable: false,
   })
   programId: string;
+
+  @Column({
+    name: 'cluster',
+    type: 'varchar',
+    length: 10,
+    nullable: false,
+    default: Cluster.MAINNET,
+  })
+  cluster: Cluster;
+
+  @Column({
+    name: 'rpc_url',
+    type: 'varchar',
+    length: 255,
+    nullable: false,
+    default: '',
+  })
+  rpcUrl: string;
 
   @Column({
     name: 'idl_id',

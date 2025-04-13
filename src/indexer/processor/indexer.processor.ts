@@ -41,7 +41,6 @@ export class IndexerProcessor extends AbstractJobProcessor {
     job: Job<IUpdateIndexerJob>,
   ): Promise<string> {
     try {
-      console.log('go in hereeeee');
       const { indexerId, pdaPubkeyStr } = job.data;
 
       const indexer = await this.getIndexer(indexerId, pdaPubkeyStr);
