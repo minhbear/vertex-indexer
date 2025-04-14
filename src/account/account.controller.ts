@@ -1,9 +1,18 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AccountService } from './account.service';
 import { UpdateUserNameDto } from './dtos/request.dto';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
 import { AccountResponse } from './dtos/response.dto';
+import { RequestWithUser } from 'src/common/types/request-with-user';
 
 @Controller('accounts')
 export class AccountController {
@@ -28,7 +37,9 @@ export class AccountController {
   })
   async updateUserName(
     @Body() input: UpdateUserNameDto,
+    @Req() req: RequestWithUser,
   ): Promise<AccountResponse> {
+    input.accountId = req.user.id;
     const account = await this.accountService.updateUserNameDto(input);
     return new AccountResponse(account);
   }
