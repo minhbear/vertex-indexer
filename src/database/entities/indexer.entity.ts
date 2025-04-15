@@ -49,7 +49,7 @@ export class IndexerEntity extends AbstractEntity {
     length: 255,
     nullable: false,
   })
-  programId: string;
+  programId: string; // TODO: Index programId
 
   @Column({
     name: 'cluster',

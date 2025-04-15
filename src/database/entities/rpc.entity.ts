@@ -35,4 +35,12 @@ export class RpcEntity {
     default: '',
   })
   apiKey: string;
+
+  @Column({
+    name: 'is_active',
+    type: 'boolean',
+    nullable: false,
+    default: true,
+  })
+  isActive: boolean;
 }

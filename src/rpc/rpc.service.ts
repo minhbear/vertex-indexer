@@ -11,7 +11,9 @@ export class RpcService {
   ) {}
 
   async findAll(): Promise<RpcEntity[]> {
-    return this.rpcRepository.find();
+    return this.rpcRepository.find({
+      where: { isActive: true },
+    });
   }
 
   async findById(id: number): Promise<RpcEntity> {
