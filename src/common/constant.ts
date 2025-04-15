@@ -1,8 +1,7 @@
 export const TypeColumn = [
   'varbinary',
   'varchar',
-  'uint256',
-  'int256',
+  'bigint',
   'integer',
   'double',
   'boolean',

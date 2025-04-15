@@ -72,6 +72,7 @@ export class IndexerEntity extends AbstractEntity {
   @Column({
     name: 'idl_id',
     type: 'bigint',
+    nullable: true,
   })
   idlId: number;
 

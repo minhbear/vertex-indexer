@@ -52,11 +52,14 @@ export class IndexerService {
     input: CreateIndexerSpaceDto,
     account: AccountEntity,
   ): Promise<void> {
-    const { idlId, name, rpcId, description } = input;
+    const { idlId, name, rpcId, description, programId } = input;
 
     const rpc = await this.rpcService.findById(rpcId);
 
-    const idl = await this.findIdl(idlId);
+    let idl: IdlDappEntity | null = null;
+    if (idlId) {
+      idl = await this.findIdl(idlId);
+    }
 
     const slug = createSlug(name);
     const exitIndexerName = await this.indexerRepository.findOne({
@@ -67,8 +70,8 @@ export class IndexerService {
     }
     await this.indexerRepository.save({
       name,
-      programId: idl.programId,
-      idlId: idl.id,
+      programId,
+      idlId: idl?.id,
       accountId: account.id,
       slug,
       cluster: rpc.cluster,
@@ -77,7 +80,7 @@ export class IndexerService {
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
-      programId: idl.programId,
+      programId,
       cluster: rpc.cluster,
     });
   }
@@ -85,7 +88,7 @@ export class IndexerService {
   async getIndexers(accountId: number): Promise<IndexerEntity[]> {
     const indexers = await this.indexerRepository
       .createQueryBuilder('indexer')
-      .innerJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.idl', 'idl')
       .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
       .where('indexer.accountId = :accountId', { accountId })
       .orderBy('indexer.createdAt', 'DESC')
@@ -140,7 +143,7 @@ export class IndexerService {
 
     const newTableMetadata = this.tableMetadataRepository.create({
       tableName,
-      fullTableName: `vertex.${account.userName}.${indexer.slug}.${tableName}`,
+      fullTableName: `${account.userName}_${indexer.slug}_${tableName}`,
       schema: tableSchema,
       indexerId,
       indexer,
