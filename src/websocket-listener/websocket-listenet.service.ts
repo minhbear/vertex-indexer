@@ -14,7 +14,7 @@ import { Queue } from 'bull';
 import { InjectPdaSystemQueue, SystemQueueJob } from 'src/common/queue';
 import { IPdaChangeJob } from 'src/indexer/interfaces';
 import { Repository } from 'typeorm';
-import { IdlDappEntity } from 'src/database/entities';
+import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RpcService } from 'src/rpc/rpc.service';
 import { Cluster, RpcEntity } from 'src/database/entities/rpc.entity';
@@ -32,8 +32,8 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
     private readonly rpcService: RpcService,
     @InjectPdaSystemQueue()
     private readonly pdaSystemQueue: Queue,
-    @InjectRepository(IdlDappEntity)
-    private readonly idlDappRepository: Repository<IdlDappEntity>,
+    @InjectRepository(IndexerEntity)
+    private readonly indexerRepository: Repository<IndexerEntity>,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(WebsocketListenerService.name);
@@ -172,17 +172,15 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getAllProgram(): Promise<{ programId: string; network: Cluster }[]> {
-    const idlDapps = await this.idlDappRepository
-      .createQueryBuilder('idlDapp')
-      .select(['program_id', 'network'])
-      .groupBy('program_id')
-      .addGroupBy('network')
+    const indexers = await this.indexerRepository
+      .createQueryBuilder('indexer')
+      .select(['DISTINCT program_id', 'cluster'])
       .getRawMany();
 
-    return idlDapps.map((idlDapp) => {
+    return indexers.map((indexer) => {
       return {
-        programId: idlDapp.program_id,
-        network: idlDapp.network,
+        programId: indexer.program_id,
+        network: indexer.cluster,
       };
     });
   }

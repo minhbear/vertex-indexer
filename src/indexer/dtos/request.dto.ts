@@ -21,9 +21,9 @@ export class CreateIndexerSpaceDto {
   name: string;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  idlId: number;
+  idlId?: number;
 
   @ApiProperty()
   @IsNotEmpty()
@@ -35,6 +35,12 @@ export class CreateIndexerSpaceDto {
   @IsString()
   @Transform(({ value }) => value.trim())
   description: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  programId: string;
 }
 
 export class TableSchemaDto {

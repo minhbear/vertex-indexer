@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
+    "@coral-xyz/borsh": "^0.31.0",
     "@keyv/redis": "^4.3.2",
     "@nestjs/bull": "^11.0.2",
     "@nestjs/cache-manager": "^3.0.1",

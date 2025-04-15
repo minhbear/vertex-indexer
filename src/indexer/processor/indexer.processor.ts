@@ -16,6 +16,8 @@ import { AbstractJobProcessor } from 'src/common/processors/common.processor';
 import path from 'path';
 import { Worker } from 'worker_threads';
 import { serializePda } from 'src/common/utils';
+import { isNil } from 'lodash';
+import { IUserScriptContext } from '../interfaces/user-script-context.interface';
 
 @Processor(SystemQueue.INDEXER_SYSTEM)
 export class IndexerProcessor extends AbstractJobProcessor {
@@ -44,22 +46,29 @@ export class IndexerProcessor extends AbstractJobProcessor {
         commitment: 'confirmed',
       });
 
-      const idlJson = indexer.idl.idlJson;
-      const provider = new AnchorProvider(connection, null, {});
-      const program = new Program(idlJson, indexer.programId, provider);
+      const idlJson = indexer.idl?.idlJson;
+      let pdaParser: any = null;
       const pdaPubkey = new PublicKey(pdaPubkeyStr);
-      const pdaName = indexer.indexerTriggers[0].pdaName;
-      const transformScript = indexer.indexerTriggers[0].transformerPda.script;
-      if (!(pdaName in program.account)) {
-        this.logger.error(`PDA name ${pdaName} not found in program account`);
-        return 'FAILED';
+      const pdaBuffer = (await connection.getAccountInfo(pdaPubkey)).data;
+      if (!isNil(idlJson)) {
+        const pdaName = indexer.indexerTriggers[0].pdaName;
+        const provider = new AnchorProvider(connection, null, {});
+        const program = new Program(idlJson, indexer.programId, provider);
+        if (!(pdaName in program.account)) {
+          this.logger.error(`PDA name ${pdaName} not found in program account`);
+          return 'FAILED';
+        }
+
+        pdaParser = await program.account[pdaName].fetch(pdaPubkey);
       }
+      const transformScript = indexer.indexerTriggers[0].transformerPda.script;
 
-      const accountData = await program.account[pdaName].fetch(pdaPubkey);
       // TODO: Split to Job if monitor had issue performance/bottleneck
-
       const transformResult = await this.executeUserScript(
-        accountData,
+        {
+          pdaBuffer,
+          pdaParser,
+        },
         transformScript,
       );
 
@@ -75,46 +84,34 @@ export class IndexerProcessor extends AbstractJobProcessor {
     return 'FINISHED';
   }
 
-  /**
-   * Sample User Script
-   *    function execute(pdaParser) {
-          const marketPrice = new utils.kamino.Fraction(pdaParser.liquidity.marketPriceSf);
-
-          return {
-            action: 'INSERT',
-            data: {
-              liquidity_available: new utils.common.BN(pdaParser.liquidity.availableAmount).toString(),
-              reserve_address: '711717171717171717'
-            }
-          }
-        }
-   * 
-   * @param pdaParser 
-   * @param transformScript 
-   * @returns 
-   */
   async executeUserScript(
-    pdaParser: any,
+    context: IUserScriptContext,
     transformScript: string,
   ): Promise<ITransformResult> {
     return new Promise((resolve, reject) => {
-      const serialize = serializePda(pdaParser);
+      let pdaSerialized: any = null;
+      if (!isNil(context.pdaParser)) {
+        pdaSerialized = serializePda(context.pdaParser);
+      }
 
       const worker = new Worker(path.resolve(__dirname, './worker.js'), {
         workerData: {
           userScript: transformScript,
-          pdaParser: JSON.stringify(serialize),
+          context: {
+            pdaBuffer: context.pdaBuffer,
+            pdaParser: pdaSerialized ?? null,
+          },
         },
       });
 
       worker.on('message', (result) => {
-        this.logger.debug('🚀 Worker Result:', result);
+        this.logger.debug(result, '🚀 Worker Result:');
         resolve(result);
         worker.terminate();
       });
 
       worker.on('error', (error) => {
-        this.logger.error('Worker Error:', error);
+        this.logger.error(error, 'Worker Error:');
         reject(error);
         worker.terminate();
       });
@@ -184,7 +181,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
   ): Promise<IndexerEntity> {
     return await this.indexerRepository
       .createQueryBuilder('indexer')
-      .innerJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.idl', 'idl')
       .innerJoinAndSelect('indexer.indexerTriggers', 'indexerTrigger')
       .innerJoinAndSelect('indexerTrigger.transformerPda', 'transformerPda')
       .innerJoinAndSelect('indexerTrigger.indexerTable', 'indexerTable')

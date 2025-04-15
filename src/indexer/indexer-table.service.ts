@@ -16,17 +16,23 @@ export class IndexerTableService {
     // TODO: validate query not have UPDATE to specific table
 
     const result = await this.dataSource.query(query);
-    const schema = Object.keys(result[0]).reduce((acc, key) => {
-      acc[key] = typeof result[0][key];
-      return acc;
-    }, {});
-    const rows = result.map((row) => {
-      const newRow = {};
-      Object.keys(row).forEach((key) => {
-        newRow[key] = row[key];
-      });
-      return newRow;
-    });
+    const schema =
+      result.length === 0
+        ? {}
+        : Object.keys(result[0]).reduce((acc, key) => {
+            acc[key] = typeof result[0][key];
+            return acc;
+          }, {});
+    const rows =
+      result.length === 0
+        ? []
+        : result.map((row) => {
+            const newRow = {};
+            Object.keys(row).forEach((key) => {
+              newRow[key] = row[key];
+            });
+            return newRow;
+          });
 
     return {
       query,
