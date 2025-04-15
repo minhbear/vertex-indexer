@@ -8,8 +8,22 @@ This guide helps you write your own custom **data transformation script** for us
 
 Your uploaded JavaScript file **must define a function** named `execute` with the following signature:
 
+* Input execute function: context is object has 2 fields
+pdaParser and pdaBuffer
+
+Basically if you create indexer had choose IDL so pdaParser already handle and be and human readable object
+If not the pdaParser is null and you must write your own borsh code to decoded from the pdaBuffer is raw byte
+
 ```js
-function execute(pdaParser) {
+// borsh if you do not choose IDL
+/** 
+ * const schema = utils.common.borsh.struct([...])
+ * 
+ * 
+ * **/
+
+
+function execute(context) {
   // Your transformation logic here
 }
 ```
@@ -34,12 +48,6 @@ The `execute` function must return an object with this structure:
 
 ---
 
-## 🧠 Input: `pdaParser`
-
-The `pdaParser` parameter contains decoded data from Solana's on-chain program. This is passed to your function as a plain JavaScript object with nested fields depending on the PDA you're indexing.
-
----
-
 ## 🛠️ Available Utilities
 
 Inside your script, the system provides built-in utility functions to help you work with complex data types.
@@ -57,21 +65,7 @@ You can access them through the `utils` object:
 ## 📘 Example Script
 
 ```js
-function execute(pdaParser) {
-  const marketPriceSf = new utils.kamino.Fraction(
-    pdaParser.liquidity.marketPriceSf,
-  );
 
-  return {
-    action: 'INSERT',
-    data: {
-      liquidity_available: new utils.common.BN(
-        pdaParser.liquidity.availableAmount,
-      ).toString(),
-      market_price: marketPriceSf.toDecimal().toString(),
-    },
-  };
-}
 ```
 
 ---
