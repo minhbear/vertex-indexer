@@ -18,7 +18,7 @@ import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RpcService } from 'src/rpc/rpc.service';
 import { Cluster, RpcEntity } from 'src/database/entities/rpc.entity';
-import { isNil } from 'lodash';
+import { isEmpty, isNil } from 'lodash';
 
 @Injectable()
 export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
@@ -120,7 +120,7 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
     const { cluster, programId } = event;
     const programIds = this.programClusterIds.get(cluster);
 
-    if (!programIds.includes(event.programId)) {
+    if (isEmpty(programIds) || !programIds.includes(event.programId)) {
       programIds.push(event.programId);
       this.programSubscribe(cluster, [programId]);
     }
