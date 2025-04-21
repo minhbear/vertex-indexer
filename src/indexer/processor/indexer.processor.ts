@@ -2,31 +2,31 @@ import { Process, Processor } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import { PinoLogger } from 'nestjs-pino';
 import {
+  InjectExecuteTransformerQueue,
   InjectIndexerSystemQueue,
   SystemQueue,
   SystemQueueJob,
 } from 'src/common/queue';
-import { ITransformResult, IUpdateIndexerJob } from '../interfaces';
+import { IUpdateIndexerJob } from '../interfaces';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { AbstractJobProcessor } from 'src/common/processors/common.processor';
-import path from 'path';
-import { Worker } from 'worker_threads';
 import { serializePda } from 'src/common/utils';
 import { isNil } from 'lodash';
-import { IUserScriptContext } from '../interfaces/user-script-context.interface';
+import { IExecuteTransformerJob } from '../interfaces/execute-transformer-job.interface';
 
 @Processor(SystemQueue.INDEXER_SYSTEM)
 export class IndexerProcessor extends AbstractJobProcessor {
   constructor(
     @InjectIndexerSystemQueue()
     private readonly indexerSystemQueue: Queue,
+    @InjectExecuteTransformerQueue()
+    private readonly executeTransformerQueue: Queue,
     @InjectRepository(IndexerEntity)
     private readonly indexerRepository: Repository<IndexerEntity>,
-    private readonly dataSource: DataSource,
     protected readonly logger: PinoLogger,
   ) {
     super(logger, indexerSystemQueue);
@@ -63,18 +63,28 @@ export class IndexerProcessor extends AbstractJobProcessor {
       }
       const transformScript = indexer.indexerTriggers[0].transformerPda.script;
 
-      // TODO: Split to Job if monitor had issue performance/bottleneck
-      const transformResult = await this.executeUserScript(
-        {
-          pdaBuffer,
-          pdaParser,
-        },
-        transformScript,
-      );
+      let pdaSerialized: any = null;
+      if (!isNil(pdaParser)) {
+        pdaSerialized = serializePda(pdaParser);
+      }
 
-      await this.saveDataToIndexerTable(
-        indexer.indexerTriggers[0].indexerTable.fullTableName,
-        transformResult,
+      const context = {
+        pdaBuffer,
+        pdaParser: pdaSerialized ?? null,
+      };
+
+      const jobId = `${SystemQueueJob.EXECUTE_TRANSFORMER}-${indexerId}-${pdaPubkeyStr}-${Date.now()}`;
+
+      await this.executeTransformerQueue.add(
+        SystemQueueJob.EXECUTE_TRANSFORMER,
+        {
+          context,
+          fullTableName: indexer.indexerTriggers[0].indexerTable.fullTableName,
+          userScript: transformScript,
+        } as IExecuteTransformerJob,
+        {
+          jobId,
+        },
       );
     } catch (error) {
       this.logger.error(error);
@@ -82,97 +92,6 @@ export class IndexerProcessor extends AbstractJobProcessor {
     }
 
     return 'FINISHED';
-  }
-
-  async executeUserScript(
-    context: IUserScriptContext,
-    transformScript: string,
-  ): Promise<ITransformResult> {
-    return new Promise((resolve, reject) => {
-      let pdaSerialized: any = null;
-      if (!isNil(context.pdaParser)) {
-        pdaSerialized = serializePda(context.pdaParser);
-      }
-
-      const worker = new Worker(path.resolve(__dirname, './worker.js'), {
-        workerData: {
-          userScript: transformScript,
-          context: {
-            pdaBuffer: context.pdaBuffer,
-            pdaParser: pdaSerialized ?? null,
-          },
-        },
-      });
-
-      worker.on('message', (result) => {
-        this.logger.debug(result, '🚀 Worker Result:');
-        resolve(result);
-        worker.terminate();
-      });
-
-      worker.on('error', (error) => {
-        this.logger.error(error, 'Worker Error:');
-        reject(error);
-        worker.terminate();
-      });
-
-      worker.on('exit', (code) => {
-        if (code !== 0) {
-          reject(new Error(`Worker exited with code ${code}`));
-        }
-      });
-    });
-  }
-
-  async saveDataToIndexerTable(
-    dbName: string,
-    input: ITransformResult,
-  ): Promise<void> {
-    const { action, data } = input;
-
-    const queryRunner: QueryRunner = this.dataSource.createQueryRunner();
-
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      if (action === 'INSERT') {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .insert()
-          .into(dbName)
-          .values(data)
-          .execute();
-      } else if (action === 'UPDATE') {
-        if (!data.id) {
-          throw new Error('Missing ID for UPDATE operation');
-        }
-
-        const { id, ...updateData } = data;
-
-        await queryRunner.manager
-          .createQueryBuilder()
-          .update(dbName)
-          .set(updateData)
-          .where('id = :id', { id })
-          .execute();
-      } else if (action === 'DELETE') {
-        if (!data.id) {
-          throw new Error('Missing ID for DELETE operation');
-        }
-
-        // TODO: Implement DELETE
-      }
-
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw new Error(
-        `Failed to execute ${action} on ${dbName}: ${error.message}`,
-      );
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   private async getIndexer(
