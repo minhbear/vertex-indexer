@@ -43,7 +43,7 @@ export class PdaProcessor extends AbstractJobProcessor {
 
       while (!isEmpty(indexers)) {
         for (const indexer of indexers) {
-          const jobId = `${SystemQueueJob.UPDATE_INDEXER}-${indexer.id}-${programId}-${pdaPubkeyStr}`;
+          const jobId = `${SystemQueueJob.UPDATE_INDEXER}:indexer<${indexer.id}>:program<${programId}>:pda<${pdaPubkeyStr}>`;
           await this.indexerSystemQueue.add(
             SystemQueueJob.UPDATE_INDEXER,
             {

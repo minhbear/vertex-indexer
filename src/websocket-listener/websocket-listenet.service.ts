@@ -93,7 +93,7 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
           if (eventData.method === 'programNotification') {
             const programId = eventData.params?.result?.value?.account?.owner;
             const pdaPubkeyStr = eventData.params?.result?.value?.pubkey;
-            const jobId = `${SystemQueueJob.PDA_CHANGE}-${programId}-${pdaPubkeyStr}`;
+            const jobId = `${SystemQueueJob.PDA_CHANGE}:program<${programId}>:pda<${pdaPubkeyStr}>`;
             await this.pdaSystemQueue.add(
               SystemQueueJob.PDA_CHANGE,
               {

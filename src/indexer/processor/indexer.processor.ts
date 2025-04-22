@@ -61,31 +61,33 @@ export class IndexerProcessor extends AbstractJobProcessor {
 
         pdaParser = await program.account[pdaName].fetch(pdaPubkey);
       }
-      const transformScript = indexer.indexerTriggers[0].transformerPda.script;
+      for (const indexerTrigger of indexer.indexerTriggers) {
+        const transformScript = indexerTrigger.transformerPda.script;
 
-      let pdaSerialized: any = null;
-      if (!isNil(pdaParser)) {
-        pdaSerialized = serializePda(pdaParser);
+        let pdaSerialized: any = null;
+        if (!isNil(pdaParser)) {
+          pdaSerialized = serializePda(pdaParser);
+        }
+
+        const context = {
+          pdaBuffer,
+          pdaParser: pdaSerialized ?? null,
+        };
+
+        const jobId = `${SystemQueueJob.EXECUTE_TRANSFORMER}:indexer<${indexerId}>:pda<${pdaPubkeyStr}>:${Date.now()}`;
+
+        await this.executeTransformerQueue.add(
+          SystemQueueJob.EXECUTE_TRANSFORMER,
+          {
+            context,
+            fullTableName: indexerTrigger.indexerTable.fullTableName,
+            userScript: transformScript,
+          } as IExecuteTransformerJob,
+          {
+            jobId,
+          },
+        );
       }
-
-      const context = {
-        pdaBuffer,
-        pdaParser: pdaSerialized ?? null,
-      };
-
-      const jobId = `${SystemQueueJob.EXECUTE_TRANSFORMER}-${indexerId}-${pdaPubkeyStr}-${Date.now()}`;
-
-      await this.executeTransformerQueue.add(
-        SystemQueueJob.EXECUTE_TRANSFORMER,
-        {
-          context,
-          fullTableName: indexer.indexerTriggers[0].indexerTable.fullTableName,
-          userScript: transformScript,
-        } as IExecuteTransformerJob,
-        {
-          jobId,
-        },
-      );
     } catch (error) {
       this.logger.error(error);
       throw error;

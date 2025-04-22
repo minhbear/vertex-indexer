@@ -3,11 +3,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { IndexerEntity } from './indexer.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { IndexerTriggerEntity } from './indexer-trigger.entity';
 
 export class ISchemaTableDefinition {
   @ApiProperty()
@@ -57,4 +59,10 @@ export class IndexerTableMetadataEntity extends AbstractEntity {
   @ManyToOne(() => IndexerEntity)
   @JoinColumn({ name: 'indexer_id', referencedColumnName: 'id' })
   indexer: IndexerEntity;
+
+  @OneToMany(
+    () => IndexerTriggerEntity,
+    (indexerTrigger) => indexerTrigger.indexerTable,
+  )
+  indexerTriggers: IndexerTriggerEntity[];
 }
