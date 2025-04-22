@@ -5,6 +5,7 @@ import { IndexerService } from './indexer.service';
 import { IndexerController } from './indexer.controller';
 import { BullModule } from '@nestjs/bull';
 import {
+  ExecuteTransformerQueueConfig,
   IndexerSystemQueueConfig,
   PdaSystemQueueConfig,
 } from 'src/common/queue';
@@ -13,11 +14,16 @@ import { IndexerProcessor } from './processor/indexer.processor';
 import { IndexerTableService } from './indexer-table.service';
 import { RpcModule } from 'src/rpc/rpc.module';
 import { AccountModule } from 'src/account/account.module';
+import { ExecuteTransformerProcessor } from './processor/execute-transformer.processor';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature(entities),
-    BullModule.registerQueue(PdaSystemQueueConfig, IndexerSystemQueueConfig),
+    BullModule.registerQueue(
+      PdaSystemQueueConfig,
+      IndexerSystemQueueConfig,
+      ExecuteTransformerQueueConfig,
+    ),
     RpcModule,
     AccountModule,
   ],
@@ -27,6 +33,7 @@ import { AccountModule } from 'src/account/account.module';
     IndexerTableService,
     PdaProcessor,
     IndexerProcessor,
+    ExecuteTransformerProcessor,
   ],
 })
 export class IndexerModule {}
