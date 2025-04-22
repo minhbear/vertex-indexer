@@ -61,11 +61,17 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
     });
 
     const programs = await this.getAllProgram();
-    for (const program of programs) {
-      if (!this.programClusterIds.has(program.network)) {
-        this.programClusterIds.set(program.network, []);
+    if (isEmpty(programs)) {
+      this.programClusterIds.set(Cluster.MAINNET, []);
+      this.programClusterIds.set(Cluster.DEVNET, []);
+      this.programClusterIds.set(Cluster.TESTNET, []);
+    } else {
+      for (const program of programs) {
+        if (!this.programClusterIds.has(program.network)) {
+          this.programClusterIds.set(program.network, []);
+        }
+        this.programClusterIds.get(program.network).push(program.programId);
       }
-      this.programClusterIds.get(program.network).push(program.programId);
     }
 
     for (const [cluster, rpcSockets] of this.rpcWebsockets.entries()) {
