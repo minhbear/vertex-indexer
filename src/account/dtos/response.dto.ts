@@ -3,6 +3,9 @@ import { AccountEntity } from 'src/database/entities';
 
 export class AccountResponse {
   @ApiProperty()
+  id: number;
+
+  @ApiProperty()
   email: string;
 
   @ApiProperty()
@@ -18,6 +21,7 @@ export class AccountResponse {
   createdAt: Date;
 
   constructor(account: AccountEntity) {
+    this.id = account.id;
     this.email = account.email;
     this.userName = account.userName;
     this.walletAddress = account.walletAddress;

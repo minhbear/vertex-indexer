@@ -61,15 +61,30 @@ export class IndexerController {
   @ApiOperation({ summary: 'Get indexers by accountId' })
   @ApiResponse({
     status: 200,
-    description: 'List of indexers',
+    description: 'List of owner indexers',
     type: [IndexerResponse],
   })
-  @Get('/')
+  @Get('/owner')
   async getIndexersByAccountId(
     @Req() req: RequestWithUser,
   ): Promise<IndexerResponse[]> {
     const accountId = req.user.id;
-    return (await this.indexerService.getIndexers(accountId)).map((indexer) => {
+    return (await this.indexerService.getIndexersOwner(accountId)).map(
+      (indexer) => {
+        return new IndexerResponse(indexer);
+      },
+    );
+  }
+
+  @ApiOperation({ summary: 'Get indexers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of indexers',
+    type: [IndexerResponse],
+  })
+  @Get('')
+  async getAllIndexer(): Promise<IndexerResponse[]> {
+    return (await this.indexerService.getIndexers()).map((indexer) => {
       return new IndexerResponse(indexer);
     });
   }
@@ -123,15 +138,10 @@ export class IndexerController {
   @Get(':indexerId/tables')
   async getAllTablesInIndexer(
     @Param('indexerId') indexerIdStr: string,
-    @Req() req: RequestWithUser,
   ): Promise<IndexerTableMetadataResponse[]> {
-    const accountId = req.user.id;
     const indexerId = parseInt(indexerIdStr);
 
-    const tables = await this.indexerService.getAllTablesInIndexer(
-      indexerId,
-      accountId,
-    );
+    const tables = await this.indexerService.getAllTablesInIndexer(indexerId);
     return tables.map((table) => new IndexerTableMetadataResponse(table));
   }
 
@@ -191,21 +201,11 @@ export class IndexerController {
     summary: 'Update transformer of indexer',
   })
   @Patch(':indexerId/transformers')
-  @UploadIdlFile('transformer')
   async updateTransformer(
     @Body() input: UpdateTransformerDto,
-    @UploadedFile() file: Express.Multer.File,
-    @Param('indexerId') indexerId: string,
     @Req() req: RequestWithUser,
   ): Promise<void> {
-    if (!file) {
-      throw new BadRequestException('Missing file transform');
-    }
-    const fileContent = fs.readFileSync(file.path, 'utf-8');
-
     input.accountId = req.user.id;
-    input.indexerId = parseInt(indexerId);
-    input.script = fileContent;
 
     return await this.indexerService.updateTransformer(input);
   }

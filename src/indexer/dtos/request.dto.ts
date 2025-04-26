@@ -120,6 +120,10 @@ export class UpdateTransformerDto {
   @Transform(({ value }) => parseInt(value))
   transformerId: number;
 
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
   script: string;
 
   indexerId: number;

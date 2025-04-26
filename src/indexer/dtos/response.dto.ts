@@ -122,6 +122,9 @@ export class IndexerResponse {
   @ApiProperty()
   cluster: string;
 
+  @ApiProperty()
+  ownerAccountId: number;
+
   constructor(indexer: IndexerEntity) {
     this.id = indexer.id;
     this.name = indexer.name;
@@ -130,5 +133,6 @@ export class IndexerResponse {
     this.programId = indexer.programId;
     this.idlId = indexer.idlId;
     this.cluster = indexer.cluster;
+    this.ownerAccountId = indexer.accountId;
   }
 }
