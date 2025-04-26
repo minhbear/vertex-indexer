@@ -21,6 +21,7 @@ import {
   CreateIndexerSpaceDto,
   CreateTableDto,
   RegisterIndexerWithTransformDto,
+  UpdateTransformerDto,
 } from './dtos/request.dto';
 import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
@@ -231,6 +232,54 @@ export class IndexerService {
       triggerType: input.triggerType,
       transformerPdaId: transformId,
     });
+  }
+
+  async getAllTransformersOfIndexer(
+    indexerId: number,
+    accountId: number,
+  ): Promise<TransformerPdaEntity[]> {
+    const indexer = await this.findIndexer(indexerId, accountId);
+
+    return await this.transformerPdaRepository.find({
+      where: { indexerId: indexer.id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateTransformer(input: UpdateTransformerDto): Promise<void> {
+    await this.findIndexer(input.indexerId, input.accountId);
+
+    const transformer = await this.transformerPdaRepository.findOneBy({
+      indexerId: input.indexerId,
+      id: input.transformerId,
+    });
+
+    if (!transformer) {
+      throw new NotFoundException('Transformer not found');
+    }
+    await this.transformerPdaRepository.update(
+      { id: transformer.id },
+      { script: input.script },
+    );
+  }
+
+  async deleteTrigger(input: {
+    indexerId: number;
+    triggerId: number;
+    accountId: number;
+  }): Promise<void> {
+    const { indexerId, triggerId, accountId } = input;
+
+    await this.findIndexer(indexerId, accountId);
+
+    const trigger = await this.indexerTriggerRepository.findOne({
+      where: { id: triggerId, indexerId },
+    });
+    if (!trigger) {
+      throw new NotFoundException('Trigger not found');
+    }
+
+    await this.indexerTriggerRepository.delete({ id: trigger.id });
   }
 
   private generateCreateTableQuery(

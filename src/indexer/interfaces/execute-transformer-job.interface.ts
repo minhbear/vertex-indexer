@@ -4,4 +4,5 @@ export interface IExecuteTransformerJob {
   userScript: string;
   context: IUserScriptContext;
   fullTableName: string;
+  indexerId: number;
 }

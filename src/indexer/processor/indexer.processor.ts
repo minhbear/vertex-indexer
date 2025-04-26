@@ -82,6 +82,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
             context,
             fullTableName: indexerTrigger.indexerTable.fullTableName,
             userScript: transformScript,
+            indexerId,
           } as IExecuteTransformerJob,
           {
             jobId,
