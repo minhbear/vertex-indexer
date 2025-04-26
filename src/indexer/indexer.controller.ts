@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UploadedFile,
@@ -13,7 +14,6 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -21,8 +21,10 @@ import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
   CreateTableDto,
+  DeleteTriggerDto,
   ExecuteQueryDto,
   RegisterIndexerWithTransformDto,
+  UpdateTransformerDto,
 } from './dtos/request.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
@@ -33,6 +35,7 @@ import {
   IndexerTableMetadataResponse,
   IndexerTriggerAndTransformerResponse,
   ResultExecuteQueryResponse,
+  TransformerResponse,
 } from './dtos/response.dto';
 import { IndexerTableService } from './indexer-table.service';
 import { IndexerGuard } from 'src/common/guards/indexer.guard';
@@ -167,5 +170,59 @@ export class IndexerController {
     @Req() req: RequestWithUser,
   ): Promise<ResultExecuteQueryResponse> {
     return await this.indexerTableService.executeQuery(input.query);
+  }
+
+  @ApiOperation({
+    summary: 'Delete trigger of indexer',
+  })
+  @Delete(':indexerId/triggers')
+  async deleteTrigger(
+    @Param('indexerId') indexerId: string,
+    @Body() input: DeleteTriggerDto,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    input.accountId = req.user.id;
+    input.indexerId = parseInt(indexerId);
+
+    return await this.indexerService.deleteTrigger(input);
+  }
+
+  @ApiOperation({
+    summary: 'Update transformer of indexer',
+  })
+  @Patch(':indexerId/transformers')
+  @UploadIdlFile('transformer')
+  async updateTransformer(
+    @Body() input: UpdateTransformerDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Param('indexerId') indexerId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    if (!file) {
+      throw new BadRequestException('Missing file transform');
+    }
+    const fileContent = fs.readFileSync(file.path, 'utf-8');
+
+    input.accountId = req.user.id;
+    input.indexerId = parseInt(indexerId);
+    input.script = fileContent;
+
+    return await this.indexerService.updateTransformer(input);
+  }
+
+  @ApiOperation({
+    summary: 'Get all transformer of indexer',
+  })
+  @Get(':indexerId/transformers')
+  async getAllTransformerOfIndexer(
+    @Param('indexerId') indexerId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<TransformerResponse[]> {
+    return (
+      await this.indexerService.getAllTransformersOfIndexer(
+        parseInt(indexerId),
+        req.user.id,
+      )
+    ).map((transformer) => new TransformerResponse(transformer));
   }
 }
