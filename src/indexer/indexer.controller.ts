@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UploadedFile,
@@ -13,7 +14,6 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -21,8 +21,10 @@ import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
   CreateTableDto,
+  DeleteTriggerDto,
   ExecuteQueryDto,
   RegisterIndexerWithTransformDto,
+  UpdateTransformerDto,
 } from './dtos/request.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
@@ -33,6 +35,7 @@ import {
   IndexerTableMetadataResponse,
   IndexerTriggerAndTransformerResponse,
   ResultExecuteQueryResponse,
+  TransformerResponse,
 } from './dtos/response.dto';
 import { IndexerTableService } from './indexer-table.service';
 import { IndexerGuard } from 'src/common/guards/indexer.guard';
@@ -58,15 +61,30 @@ export class IndexerController {
   @ApiOperation({ summary: 'Get indexers by accountId' })
   @ApiResponse({
     status: 200,
-    description: 'List of indexers',
+    description: 'List of owner indexers',
     type: [IndexerResponse],
   })
-  @Get('/')
+  @Get('/owner')
   async getIndexersByAccountId(
     @Req() req: RequestWithUser,
   ): Promise<IndexerResponse[]> {
     const accountId = req.user.id;
-    return (await this.indexerService.getIndexers(accountId)).map((indexer) => {
+    return (await this.indexerService.getIndexersOwner(accountId)).map(
+      (indexer) => {
+        return new IndexerResponse(indexer);
+      },
+    );
+  }
+
+  @ApiOperation({ summary: 'Get indexers' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of indexers',
+    type: [IndexerResponse],
+  })
+  @Get('')
+  async getAllIndexer(): Promise<IndexerResponse[]> {
+    return (await this.indexerService.getIndexers()).map((indexer) => {
       return new IndexerResponse(indexer);
     });
   }
@@ -120,15 +138,10 @@ export class IndexerController {
   @Get(':indexerId/tables')
   async getAllTablesInIndexer(
     @Param('indexerId') indexerIdStr: string,
-    @Req() req: RequestWithUser,
   ): Promise<IndexerTableMetadataResponse[]> {
-    const accountId = req.user.id;
     const indexerId = parseInt(indexerIdStr);
 
-    const tables = await this.indexerService.getAllTablesInIndexer(
-      indexerId,
-      accountId,
-    );
+    const tables = await this.indexerService.getAllTablesInIndexer(indexerId);
     return tables.map((table) => new IndexerTableMetadataResponse(table));
   }
 
@@ -167,5 +180,49 @@ export class IndexerController {
     @Req() req: RequestWithUser,
   ): Promise<ResultExecuteQueryResponse> {
     return await this.indexerTableService.executeQuery(input.query);
+  }
+
+  @ApiOperation({
+    summary: 'Delete trigger of indexer',
+  })
+  @Delete(':indexerId/triggers')
+  async deleteTrigger(
+    @Param('indexerId') indexerId: string,
+    @Body() input: DeleteTriggerDto,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    input.accountId = req.user.id;
+    input.indexerId = parseInt(indexerId);
+
+    return await this.indexerService.deleteTrigger(input);
+  }
+
+  @ApiOperation({
+    summary: 'Update transformer of indexer',
+  })
+  @Patch(':indexerId/transformers')
+  async updateTransformer(
+    @Body() input: UpdateTransformerDto,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    input.accountId = req.user.id;
+
+    return await this.indexerService.updateTransformer(input);
+  }
+
+  @ApiOperation({
+    summary: 'Get all transformer of indexer',
+  })
+  @Get(':indexerId/transformers')
+  async getAllTransformerOfIndexer(
+    @Param('indexerId') indexerId: string,
+    @Req() req: RequestWithUser,
+  ): Promise<TransformerResponse[]> {
+    return (
+      await this.indexerService.getAllTransformersOfIndexer(
+        parseInt(indexerId),
+        req.user.id,
+      )
+    ).map((transformer) => new TransformerResponse(transformer));
   }
 }

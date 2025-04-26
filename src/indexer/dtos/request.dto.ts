@@ -113,3 +113,31 @@ export class ExecuteQueryDto {
   @Transform(({ value }) => value.trim())
   query: string;
 }
+
+export class UpdateTransformerDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => parseInt(value))
+  transformerId: number;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  script: string;
+
+  indexerId: number;
+
+  accountId: number;
+}
+
+export class DeleteTriggerDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumber()
+  triggerId: number;
+
+  indexerId: number;
+
+  accountId: number;
+}

@@ -48,14 +48,25 @@ export class ResultExecuteQueryResponse {
 
 export class TransformerResponse {
   @ApiProperty()
+  id: number;
+
+  @ApiProperty()
   script: string;
+
+  @ApiProperty()
+  indexerId: number;
 
   constructor(transformer: TransformerPdaEntity) {
     this.script = transformer.script;
+    this.indexerId = transformer.indexerId;
+    this.id = transformer.id;
   }
 }
 
 export class IndexerTriggerAndTransformerResponse {
+  @ApiProperty()
+  id: number;
+
   @ApiProperty()
   triggerType: TriggerType;
 
@@ -78,6 +89,7 @@ export class IndexerTriggerAndTransformerResponse {
   indexerId: number;
 
   constructor(trigger: IndexerTriggerEntity) {
+    this.id = trigger.id;
     this.triggerType = trigger.triggerType;
     this.pdaPubkey = trigger.pdaPubkey;
     this.pdaName = trigger.pdaName;
@@ -110,6 +122,9 @@ export class IndexerResponse {
   @ApiProperty()
   cluster: string;
 
+  @ApiProperty()
+  ownerAccountId: number;
+
   constructor(indexer: IndexerEntity) {
     this.id = indexer.id;
     this.name = indexer.name;
@@ -118,5 +133,6 @@ export class IndexerResponse {
     this.programId = indexer.programId;
     this.idlId = indexer.idlId;
     this.cluster = indexer.cluster;
+    this.ownerAccountId = indexer.accountId;
   }
 }

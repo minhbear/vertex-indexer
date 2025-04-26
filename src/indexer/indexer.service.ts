@@ -21,6 +21,7 @@ import {
   CreateIndexerSpaceDto,
   CreateTableDto,
   RegisterIndexerWithTransformDto,
+  UpdateTransformerDto,
 } from './dtos/request.dto';
 import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
@@ -85,7 +86,19 @@ export class IndexerService {
     });
   }
 
-  async getIndexers(accountId: number): Promise<IndexerEntity[]> {
+  async getIndexers(): Promise<IndexerEntity[]> {
+    // TODO: Handle pagination
+    const indexers = await this.indexerRepository
+      .createQueryBuilder('indexer')
+      .leftJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
+      .orderBy('indexer.createdAt', 'DESC')
+      .getMany();
+
+    return indexers;
+  }
+
+  async getIndexersOwner(accountId: number): Promise<IndexerEntity[]> {
     const indexers = await this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
@@ -104,7 +117,7 @@ export class IndexerService {
   }): Promise<IndexerTriggerEntity[]> {
     const { indexerId, tableId, accountId } = input;
 
-    await this.findIndexer(indexerId, accountId);
+    await this.findIndexerWithAccountId(indexerId, accountId);
 
     return await this.indexerTriggerRepository
       .createQueryBuilder('trigger')
@@ -123,7 +136,7 @@ export class IndexerService {
   ): Promise<void> {
     const { indexerId, tableName, schema } = input;
 
-    const indexer = await this.findIndexer(indexerId, account.id);
+    const indexer = await this.findIndexerWithAccountId(indexerId, account.id);
 
     const existingTable = await this.tableMetadataRepository.findOne({
       where: { tableName, indexerId },
@@ -165,7 +178,7 @@ export class IndexerService {
   }): Promise<void> {
     const { indexerId, tableName, accountId } = input;
 
-    await this.findIndexer(indexerId, accountId);
+    await this.findIndexerWithAccountId(indexerId, accountId);
 
     const tableMetadata = await this.tableMetadataRepository.findOne({
       where: { tableName, indexerId },
@@ -189,9 +202,8 @@ export class IndexerService {
 
   async getAllTablesInIndexer(
     indexerId: number,
-    accountId: number,
   ): Promise<IndexerTableMetadataEntity[]> {
-    const indexer = await this.findIndexer(indexerId, accountId);
+    const indexer = await this.findIndexer(indexerId);
 
     return await this.tableMetadataRepository.find({
       where: { indexerId: indexer.id },
@@ -204,7 +216,10 @@ export class IndexerService {
     input: RegisterIndexerWithTransformDto,
     fileContent: string,
   ): Promise<void> {
-    const indexer = await this.findIndexer(input.indexerId, input.accountId);
+    const indexer = await this.findIndexerWithAccountId(
+      input.indexerId,
+      input.accountId,
+    );
 
     const transformId = (
       await this.transformerPdaRepository
@@ -231,6 +246,54 @@ export class IndexerService {
       triggerType: input.triggerType,
       transformerPdaId: transformId,
     });
+  }
+
+  async getAllTransformersOfIndexer(
+    indexerId: number,
+    accountId: number,
+  ): Promise<TransformerPdaEntity[]> {
+    const indexer = await this.findIndexerWithAccountId(indexerId, accountId);
+
+    return await this.transformerPdaRepository.find({
+      where: { indexerId: indexer.id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateTransformer(input: UpdateTransformerDto): Promise<void> {
+    await this.findIndexerWithAccountId(input.indexerId, input.accountId);
+
+    const transformer = await this.transformerPdaRepository.findOneBy({
+      indexerId: input.indexerId,
+      id: input.transformerId,
+    });
+
+    if (!transformer) {
+      throw new NotFoundException('Transformer not found');
+    }
+    await this.transformerPdaRepository.update(
+      { id: transformer.id },
+      { script: input.script },
+    );
+  }
+
+  async deleteTrigger(input: {
+    indexerId: number;
+    triggerId: number;
+    accountId: number;
+  }): Promise<void> {
+    const { indexerId, triggerId, accountId } = input;
+
+    await this.findIndexerWithAccountId(indexerId, accountId);
+
+    const trigger = await this.indexerTriggerRepository.findOne({
+      where: { id: triggerId, indexerId },
+    });
+    if (!trigger) {
+      throw new NotFoundException('Trigger not found');
+    }
+
+    await this.indexerTriggerRepository.delete({ id: trigger.id });
   }
 
   private generateCreateTableQuery(
@@ -272,12 +335,22 @@ export class IndexerService {
     return idl;
   }
 
-  private async findIndexer(
+  private async findIndexerWithAccountId(
     indexerId: number,
     accountId: number,
   ): Promise<IndexerEntity> {
     const indexer = await this.indexerRepository.findOne({
       where: { id: indexerId, accountId },
+    });
+    if (!indexer) {
+      throw new NotFoundException(`Indexer not found`);
+    }
+    return indexer;
+  }
+
+  private async findIndexer(indexerId: number): Promise<IndexerEntity> {
+    const indexer = await this.indexerRepository.findOne({
+      where: { id: indexerId },
     });
     if (!indexer) {
       throw new NotFoundException(`Indexer not found`);
