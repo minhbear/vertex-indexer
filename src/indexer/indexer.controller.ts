@@ -41,6 +41,7 @@ import { IndexerTableService } from './indexer-table.service';
 import { IndexerGuard } from 'src/common/guards/indexer.guard';
 
 @ApiTags('Indexer')
+@ApiBearerAuth()
 @Controller('indexers')
 @UseGuards(AccessTokenGuard, IndexerGuard)
 export class IndexerController {
@@ -49,7 +50,6 @@ export class IndexerController {
     private readonly indexerTableService: IndexerTableService,
   ) {}
 
-  @ApiBearerAuth()
   @Post('/create')
   async createIndexerSpace(
     @Body() input: CreateIndexerSpaceDto,
@@ -87,6 +87,22 @@ export class IndexerController {
     return (await this.indexerService.getIndexers()).map((indexer) => {
       return new IndexerResponse(indexer);
     });
+  }
+
+  @ApiOperation({ summary: 'Get indexer by id' })
+  @ApiResponse({
+    status: 200,
+    description: 'Get indexer by id',
+    type: IndexerResponse,
+  })
+  @Get(':indexerId')
+  async getIndexer(
+    @Param('indexerId') indexerId: string,
+  ): Promise<IndexerResponse> {
+    const indexer = await this.indexerService.getIndexerById(
+      parseInt(indexerId),
+    );
+    return new IndexerResponse(indexer);
   }
 
   @ApiOperation({ summary: 'Get all Trigger and Transformer of Table' })

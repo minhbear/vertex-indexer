@@ -110,6 +110,16 @@ export class IndexerService {
     return indexers;
   }
 
+  async getIndexerById(indexerId: number): Promise<IndexerEntity> {
+    const indexer = await this.indexerRepository.findOne({
+      where: { id: indexerId },
+    });
+    if (!indexer) {
+      throw new NotFoundException(`Indexer not found`);
+    }
+    return indexer;
+  }
+
   async getAllIndexerTriggerAndTransformOfTable(input: {
     indexerId: number;
     accountId: number;
