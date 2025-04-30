@@ -1,5 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { SYSTEM_RATE_LIMITER } from './constant';
+import { InjectQueue } from '@nestjs/bull';
 
 export enum SystemQueue {
   PDA_SYSTEM = 'pda-system',

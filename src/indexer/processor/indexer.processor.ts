@@ -8,14 +8,10 @@ import {
   SystemQueueJob,
 } from 'src/common/queue';
 import { IUpdateIndexerJob } from '../interfaces';
-import { Connection, PublicKey } from '@solana/web3.js';
 import { Repository } from 'typeorm';
 import { IndexerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { AbstractJobProcessor } from 'src/common/processors/common.processor';
-import { serializePda } from 'src/common/utils';
-import { isNil } from 'lodash';
 import { IExecuteTransformerJob } from '../interfaces/execute-transformer-job.interface';
 
 @Processor(SystemQueue.INDEXER_SYSTEM)
@@ -42,47 +38,16 @@ export class IndexerProcessor extends AbstractJobProcessor {
       const { indexerId, pdaPubkeyStr } = job.data;
 
       const indexer = await this.getIndexer(indexerId, pdaPubkeyStr);
-      const connection = new Connection(indexer.rpcUrl, {
-        commitment: 'confirmed',
-      });
 
-      const idlJson = indexer.idl?.idlJson;
-      let pdaParser: any = null;
-      const pdaPubkey = new PublicKey(pdaPubkeyStr);
-      const pdaBuffer = (await connection.getAccountInfo(pdaPubkey)).data;
-      if (!isNil(idlJson)) {
-        const pdaName = indexer.indexerTriggers[0].pdaName;
-        const provider = new AnchorProvider(connection, null, {});
-        const program = new Program(idlJson, indexer.programId, provider);
-        if (!(pdaName in program.account)) {
-          this.logger.error(`PDA name ${pdaName} not found in program account`);
-          return 'FAILED';
-        }
-
-        pdaParser = await program.account[pdaName].fetch(pdaPubkey);
-      }
       for (const indexerTrigger of indexer.indexerTriggers) {
-        const transformScript = indexerTrigger.transformerPda.script;
-
-        let pdaSerialized: any = null;
-        if (!isNil(pdaParser)) {
-          pdaSerialized = serializePda(pdaParser);
-        }
-
-        const context = {
-          pdaBuffer,
-          pdaParser: pdaSerialized ?? null,
-        };
-
-        const jobId = `${SystemQueueJob.EXECUTE_TRANSFORMER}:indexer<${indexerId}>:pda<${pdaPubkeyStr}>:${Date.now()}`;
+        const jobId = `${SystemQueueJob.EXECUTE_TRANSFORMER}:pda<${pdaPubkeyStr}>:indexer<${indexerId}>:trigger<${indexerTrigger.id}>:${Date.now()}`;
 
         await this.executeTransformerQueue.add(
           SystemQueueJob.EXECUTE_TRANSFORMER,
           {
-            context,
-            fullTableName: indexerTrigger.indexerTable.fullTableName,
-            userScript: transformScript,
+            indexerTriggerId: indexerTrigger.id,
             indexerId,
+            pdaPubkeyStr,
           } as IExecuteTransformerJob,
           {
             jobId,
@@ -103,10 +68,7 @@ export class IndexerProcessor extends AbstractJobProcessor {
   ): Promise<IndexerEntity> {
     return await this.indexerRepository
       .createQueryBuilder('indexer')
-      .leftJoinAndSelect('indexer.idl', 'idl')
       .innerJoinAndSelect('indexer.indexerTriggers', 'indexerTrigger')
-      .innerJoinAndSelect('indexerTrigger.transformerPda', 'transformerPda')
-      .innerJoinAndSelect('indexerTrigger.indexerTable', 'indexerTable')
       .where('indexer.id = :indexerId', { indexerId })
       .andWhere('indexerTrigger.pdaPubkey = :pdaPubkeyStr', { pdaPubkeyStr })
       .getOne();

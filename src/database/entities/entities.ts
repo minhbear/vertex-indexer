@@ -1,6 +1,6 @@
 import { readdirSync } from 'fs';
-import { join } from 'path';
 import * as fs from 'node:fs';
+import { join } from 'path';
 
 const entities = [];
 const entitiesPath = join(__dirname);

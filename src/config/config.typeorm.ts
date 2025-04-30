@@ -1,7 +1,5 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
-
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as dotenv from 'dotenv';
 import { PinoLogger } from 'nestjs-pino';
 import {
   AbstractLogger,
@@ -15,6 +13,8 @@ import {
   addTransactionalDataSource,
   deleteDataSourceByName,
 } from 'typeorm-transactional';
+
+dotenv.config({ path: '.env' });
 
 export class PinoTypeOrmLogger extends AbstractLogger {
   constructor(

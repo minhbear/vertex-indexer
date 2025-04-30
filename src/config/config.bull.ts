@@ -1,4 +1,3 @@
-import { BullModule, BullModuleOptions } from '@nestjs/bull';
 import {
   REDIS_HOST,
   REDIS_PORT,
@@ -10,6 +9,7 @@ import {
   BULL_DEFAULT_ATTEMPTS_COUNT,
   BULL_DEFAULT_BACKOFF_MILLISECONDS,
 } from '../app.environment';
+import { BullModule, BullModuleOptions } from '@nestjs/bull';
 
 const bullModuleOptions: BullModuleOptions = {
   redis: {
