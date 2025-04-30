@@ -29,14 +29,6 @@ export class RpcEntity {
   cluster: Cluster;
 
   @Column({
-    name: 'api_key',
-    type: 'varchar',
-    nullable: false,
-    default: '',
-  })
-  apiKey: string;
-
-  @Column({
     name: 'is_active',
     type: 'boolean',
     nullable: false,

@@ -19,10 +19,14 @@ import { IndexerTriggerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AccountClient, AnchorProvider, Program } from '@coral-xyz/anchor';
+import { Inject } from '@nestjs/common';
+import Redis from 'ioredis';
 
 @Processor(SystemQueue.EXECUTE_TRANSFORMER)
 export class ExecuteTransformerProcessor extends AbstractJobProcessor {
   constructor(
+    @Inject('REDIS_CLIENT')
+    private readonly redis: Redis,
     @InjectExecuteTransformerQueue()
     private readonly executeTransformerQueue: Queue,
     @InjectRepository(IndexerTriggerEntity)
@@ -45,7 +49,16 @@ export class ExecuteTransformerProcessor extends AbstractJobProcessor {
       const indexerTrigger = await this.getIndexer(indexerTriggerId);
       const indexer = indexerTrigger.indexer;
 
-      const connection = new Connection(indexer.rpcUrl, {
+      const rpc = await this.redis.get(`rpc:${indexer.cluster}`);
+      if (!rpc) {
+        this.logger.error(
+          `RPC not found for cluster ${indexer.cluster} in Redis`,
+        );
+        return 'FAILED';
+      }
+      const rpcUrl = `http://${rpc}`;
+
+      const connection = new Connection(rpcUrl, {
         commitment: 'confirmed',
       });
 

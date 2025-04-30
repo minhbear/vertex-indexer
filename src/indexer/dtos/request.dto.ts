@@ -12,6 +12,7 @@ import {
 import { TypeColumn } from 'src/common/constant';
 import { TriggerType } from 'src/common/enum/common.enum';
 import { ColumnType } from 'src/common/types/column-type';
+import { Cluster } from 'src/database/entities/rpc.entity';
 
 export class CreateIndexerSpaceDto {
   @ApiProperty()
@@ -27,8 +28,8 @@ export class CreateIndexerSpaceDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsNumber()
-  rpcId: number;
+  @IsEnum(Cluster)
+  cluster: Cluster;
 
   @ApiProperty()
   @IsNotEmpty()

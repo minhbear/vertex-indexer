@@ -53,9 +53,7 @@ export class IndexerService {
     input: CreateIndexerSpaceDto,
     account: AccountEntity,
   ): Promise<void> {
-    const { idlId, name, rpcId, description, programId } = input;
-
-    const rpc = await this.rpcService.findById(rpcId);
+    const { idlId, name, cluster, description, programId } = input;
 
     let idl: IdlDappEntity | null = null;
     if (idlId) {
@@ -75,14 +73,13 @@ export class IndexerService {
       idlId: idl?.id,
       accountId: account.id,
       slug,
-      cluster: rpc.cluster,
-      rpcUrl: this.rpcService.getFullHttpUrl(rpc),
+      cluster,
       description,
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
       programId,
-      cluster: rpc.cluster,
+      cluster,
     });
   }
 
@@ -163,6 +160,13 @@ export class IndexerService {
       type: column.type,
       nullable: column.nullable ?? false,
     }));
+    const originalTableSchema = [...tableSchema];
+
+    tableSchema.push({
+      name: 'id',
+      type: 'bigint',
+      nullable: false,
+    });
 
     const newTableMetadata = this.tableMetadataRepository.create({
       tableName,
@@ -175,7 +179,7 @@ export class IndexerService {
 
     const createTableQuery = this.generateCreateTableQuery(
       newTableMetadata.fullTableName,
-      tableSchema,
+      originalTableSchema,
     );
     await this.tableMetadataRepository.query(createTableQuery);
   }
@@ -310,12 +314,14 @@ export class IndexerService {
     tableName: string,
     schema: ISchemaTableDefinition[],
   ): string {
-    const columnsDefinition = schema
+    let columnsDefinition = schema
       .map(
         (col) =>
           `${col.name} ${this.mapColumnType(col.type)} ${col.nullable ? 'NULL' : 'NOT NULL'}`,
       )
       .join(', ');
+
+    columnsDefinition += `, id BIGSERIAL NOT NULL PRIMARY KEY`;
 
     return `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDefinition});`;
   }

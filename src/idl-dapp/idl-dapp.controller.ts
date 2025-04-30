@@ -18,37 +18,12 @@ import {
   ApiOperation,
 } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
-import { InjectIndexerSystemQueue, SystemQueueJob } from 'src/common/queue';
-import { Queue } from 'bull';
 
 @ApiBearerAuth()
-// @UseGuards(AccessTokenGuard)
+@UseGuards(AccessTokenGuard)
 @Controller('idl-dapp')
 export class IdlDappController {
-  constructor(
-    private readonly idlDappService: IdlDappService,
-    @InjectIndexerSystemQueue()
-    private readonly indexerSystemQueue: Queue,
-  ) {}
-
-  @Get('test')
-  async test() {
-    const programId = 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK';
-    const pdaPubkeyStr = '3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv';
-
-    const jobId = `${SystemQueueJob.UPDATE_INDEXER}:indexer<${21}>:program<${programId}>:pda<${pdaPubkeyStr}>`;
-    await this.indexerSystemQueue.add(
-      SystemQueueJob.UPDATE_INDEXER,
-      {
-        indexerId: 21,
-        programId,
-        pdaPubkeyStr,
-      },
-      {
-        jobId,
-      },
-    );
-  }
+  constructor(private readonly idlDappService: IdlDappService) {}
 
   @Post('/upload')
   @ApiOperation({ summary: 'Upload an IDL JSON file' })

@@ -61,15 +61,6 @@ export class IndexerEntity extends AbstractEntity {
   cluster: Cluster;
 
   @Column({
-    name: 'rpc_url',
-    type: 'varchar',
-    length: 255,
-    nullable: false,
-    default: '',
-  })
-  rpcUrl: string;
-
-  @Column({
     name: 'idl_id',
     type: 'bigint',
     nullable: true,
