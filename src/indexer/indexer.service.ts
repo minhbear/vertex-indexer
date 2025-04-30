@@ -14,11 +14,13 @@ import {
   IndexerTableMetadataEntity,
   IndexerTriggerEntity,
   ISchemaTableDefinition,
+  QueryLogEntity,
   TransformerPdaEntity,
 } from 'src/database/entities';
 import { Repository } from 'typeorm';
 import {
   CreateIndexerSpaceDto,
+  CreateQueryLogDto,
   CreateTableDto,
   RegisterIndexerWithTransformDto,
   UpdateTransformerDto,
@@ -44,6 +46,8 @@ export class IndexerService {
     private readonly transformerPdaRepository: Repository<TransformerPdaEntity>,
     @InjectRepository(IndexerTriggerEntity)
     private readonly indexerTriggerRepository: Repository<IndexerTriggerEntity>,
+    @InjectRepository(QueryLogEntity)
+    private readonly queryLogRepository: Repository<QueryLogEntity>,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(IndexerService.name);
@@ -88,6 +92,7 @@ export class IndexerService {
     const indexers = await this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.account', 'account')
       .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
       .orderBy('indexer.createdAt', 'DESC')
       .getMany();
@@ -99,6 +104,7 @@ export class IndexerService {
     const indexers = await this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
+      .leftJoinAndSelect('indexer.account', 'account')
       .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
       .where('indexer.accountId = :accountId', { accountId })
       .orderBy('indexer.createdAt', 'DESC')
@@ -308,6 +314,26 @@ export class IndexerService {
     }
 
     await this.indexerTriggerRepository.delete({ id: trigger.id });
+  }
+
+  async getAllQueryLogsInIndexer(indexerId: number): Promise<QueryLogEntity[]> {
+    const indexer = await this.findIndexer(indexerId);
+
+    return await this.queryLogRepository.find({
+      where: { indexerId: indexer.id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async createQueryLogs(input: CreateQueryLogDto): Promise<void> {
+    await this.findIndexerWithAccountId(input.indexerId, input.accountId);
+
+    const queryLog = this.queryLogRepository.create({
+      indexerId: input.indexerId,
+      query: input.query,
+      description: input.description,
+    });
+    await this.queryLogRepository.save(queryLog);
   }
 
   private generateCreateTableQuery(

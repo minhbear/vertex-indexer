@@ -20,6 +20,7 @@ import {
 import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
+  CreateQueryLogDto,
   CreateTableDto,
   DeleteTriggerDto,
   ExecuteQueryDto,
@@ -34,6 +35,7 @@ import {
   IndexerResponse,
   IndexerTableMetadataResponse,
   IndexerTriggerAndTransformerResponse,
+  QueryLogResponse,
   ResultExecuteQueryResponse,
   TransformerResponse,
 } from './dtos/response.dto';
@@ -240,5 +242,35 @@ export class IndexerController {
         req.user.id,
       )
     ).map((transformer) => new TransformerResponse(transformer));
+  }
+
+  @ApiOperation({
+    summary: 'Get all query logs of indexer',
+  })
+  @ApiResponse({
+    status: 200,
+    type: [QueryLogResponse],
+  })
+  @Get(':indexerId/query')
+  async getAllQueryLogsInIndexer(
+    @Param('indexerId') indexerId: string,
+  ): Promise<QueryLogResponse[]> {
+    return (
+      await this.indexerService.getAllQueryLogsInIndexer(parseInt(indexerId))
+    ).map((queryLog) => {
+      return new QueryLogResponse(queryLog);
+    });
+  }
+
+  @Post(':indexerId/query')
+  async createQueryLogs(
+    @Param('indexerId') indexerId: string,
+    @Body() input: CreateQueryLogDto,
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
+    input.accountId = req.user.id;
+    input.indexerId = parseInt(indexerId);
+
+    return await this.indexerService.createQueryLogs(input);
   }
 }

@@ -142,3 +142,17 @@ export class DeleteTriggerDto {
 
   accountId: number;
 }
+
+export class CreateQueryLogDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  query: string;
+
+  @ApiProperty()
+  description: string;
+
+  accountId: number;
+
+  indexerId: number;
+}
