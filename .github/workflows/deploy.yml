@@ -35,7 +35,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.EC2_PORT }}
-          source: "frontend.tar.gz"
+          source: "backend.tar.gz"
           target: "/home/ubuntu/deploy"
 
       - name: Run remote deploy script on EC2
@@ -46,16 +46,16 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.EC2_PORT }}
           script: |
-            sudo mkdir -p /home/ubuntu/apps/frontend
-            sudo chown -R ubuntu:ubuntu /home/ubuntu/apps/frontend
+            sudo mkdir -p /home/ubuntu/apps/backend
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/apps/backend
 
-            sudo tar -xzf /home/ubuntu/deploy/frontend.tar.gz -C /home/ubuntu/apps/frontend
-            sudo rm -rf /home/ubuntu/deploy/frontend.tar.gz
+            sudo tar -xzf /home/ubuntu/deploy/backend.tar.gz -C /home/ubuntu/apps/backend
+            sudo rm -rf /home/ubuntu/deploy/backend.tar.gz
 
             source ~/.nvm/nvm.sh
             nvm use node
 
-            cd /home/ubuntu/apps/frontend
+            cd /home/ubuntu/apps/backend
 
             pnpm install
 
