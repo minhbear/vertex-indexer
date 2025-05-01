@@ -46,6 +46,8 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           port: ${{ secrets.EC2_PORT }}
           script: |
+            set -e  # ← This makes the script stop immediately on error
+
             sudo mkdir -p /home/ubuntu/apps/backend
             sudo chown -R ubuntu:ubuntu /home/ubuntu/apps/backend
 
@@ -60,8 +62,7 @@ jobs:
             pnpm install
 
             echo "Run migrations 🚀"
-            pnpm migration:run
-
+            pnpm migration:run-build
             echo "Finish run migrations ✅"
 
             pm2 flush backend || true
