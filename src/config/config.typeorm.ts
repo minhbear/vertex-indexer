@@ -87,7 +87,7 @@ export const dataSourceOptions: TypeOrmModuleOptions = {
     ? JSON.parse(process.env.TYPEORM_SYNCHRONIZE)
     : false,
   logging: process.env.TYPEORM_LOGGING
-    ? JSON.parse(process.env.TYPEORM_LOGGING)
+    ? JSON.parse(process.env.TYPEORM_LOGGING)?.split(',')
     : false,
   entities: [`${__dirname}/../../dist/database/entities/*.entity.{ts,js}`],
   migrations: [`${__dirname}/../../dist/database/migrations/*.{ts,js}`],
