@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { TypeColumn } from 'src/common/constant';
+import { PagingRequest } from 'src/common/dtos/common.dto';
 import { TriggerType } from 'src/common/enum/common.enum';
 import { ColumnType } from 'src/common/types/column-type';
 import { Cluster } from 'src/database/entities/rpc.entity';
@@ -43,6 +44,8 @@ export class CreateIndexerSpaceDto {
   @Transform(({ value }) => value.trim())
   programId: string;
 }
+
+export class GetIndexersRequest extends PagingRequest {}
 
 export class TableSchemaDto {
   @ApiProperty()

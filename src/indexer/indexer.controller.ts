@@ -7,16 +7,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IndexerService } from './indexer.service';
 import {
   CreateIndexerSpaceDto,
@@ -24,6 +20,7 @@ import {
   CreateTableDto,
   DeleteTriggerDto,
   ExecuteQueryDto,
+  GetIndexersRequest,
   RegisterIndexerWithTransformDto,
   UpdateTransformerDto,
 } from './dtos/request.dto';
@@ -41,6 +38,10 @@ import {
 } from './dtos/response.dto';
 import { IndexerTableService } from './indexer-table.service';
 import { IndexerGuard } from 'src/common/guards/indexer.guard';
+import {
+  ApiPaginatedResponse,
+  PagingResponse,
+} from 'src/common/dtos/common.dto';
 
 @ApiTags('Indexer')
 @ApiBearerAuth()
@@ -60,43 +61,42 @@ export class IndexerController {
     return await this.indexerService.createIndexerSpace(input, req.user);
   }
 
+  @ApiPaginatedResponse(IndexerResponse)
   @ApiOperation({ summary: 'Get indexers by accountId' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of owner indexers',
-    type: [IndexerResponse],
-  })
   @Get('/owner')
   async getIndexersByAccountId(
     @Req() req: RequestWithUser,
-  ): Promise<IndexerResponse[]> {
+    @Query() params: GetIndexersRequest,
+  ): Promise<PagingResponse<IndexerResponse>> {
     const accountId = req.user.id;
-    return (await this.indexerService.getIndexersOwner(accountId)).map(
-      (indexer) => {
-        return new IndexerResponse(indexer);
-      },
+    const [indexers, total] = await this.indexerService.getIndexersOwner(
+      params,
+      accountId,
     );
+
+    return {
+      pageData: indexers.map((indexer) => new IndexerResponse(indexer)),
+      pageNum: params.pageNum,
+      total,
+    };
   }
 
+  @ApiPaginatedResponse(IndexerResponse)
   @ApiOperation({ summary: 'Get indexers' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of indexers',
-    type: [IndexerResponse],
-  })
   @Get('')
-  async getAllIndexer(): Promise<IndexerResponse[]> {
-    return (await this.indexerService.getIndexers()).map((indexer) => {
-      return new IndexerResponse(indexer);
-    });
+  async getAllIndexer(
+    @Query() params: GetIndexersRequest,
+  ): Promise<PagingResponse<IndexerResponse>> {
+    const [indexers, total] = await this.indexerService.getIndexers(params);
+
+    return {
+      pageData: indexers.map((indexer) => new IndexerResponse(indexer)),
+      pageNum: params.pageNum,
+      total,
+    };
   }
 
   @ApiOperation({ summary: 'Get indexer by id' })
-  @ApiResponse({
-    status: 200,
-    description: 'Get indexer by id',
-    type: IndexerResponse,
-  })
   @Get(':indexerId')
   async getIndexer(
     @Param('indexerId') indexerId: string,
@@ -108,11 +108,6 @@ export class IndexerController {
   }
 
   @ApiOperation({ summary: 'Get all Trigger and Transformer of Table' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of indexers',
-    type: [IndexerTableMetadataResponse],
-  })
   @Get(':indexerId/tables/:tableId/trigger-transformer')
   async getAllIndexerTriggerAndTransformOfTable(
     @Param('indexerId') indexerId: string,
@@ -152,7 +147,6 @@ export class IndexerController {
     });
   }
 
-  @ApiResponse({ status: 200, type: [IndexerTableMetadataResponse] })
   @Get(':indexerId/tables')
   async getAllTablesInIndexer(
     @Param('indexerId') indexerIdStr: string,
@@ -185,10 +179,6 @@ export class IndexerController {
     await this.indexerService.registerIndexerWithTransform(input, fileContent);
   }
 
-  @ApiResponse({
-    status: 200,
-    type: ResultExecuteQueryResponse,
-  })
   @ApiOperation({
     summary: 'Execute query on indexer table',
   })
@@ -246,10 +236,6 @@ export class IndexerController {
 
   @ApiOperation({
     summary: 'Get all query logs of indexer',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [QueryLogResponse],
   })
   @Get(':indexerId/query')
   async getAllQueryLogsInIndexer(

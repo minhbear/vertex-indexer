@@ -37,8 +37,10 @@ export class PagingRequest {
 
 export class PagingResponse<T> {
   pageData: T[];
+
   @ApiProperty()
   pageNum: number;
+
   @ApiProperty()
   total: number;
 }

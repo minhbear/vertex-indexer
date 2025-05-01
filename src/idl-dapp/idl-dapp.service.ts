@@ -5,6 +5,9 @@ import { Repository } from 'typeorm';
 import { UploadIdlInput } from './idl-dapp.interface';
 import { generateIdlHash } from 'src/common/utils/hash.utils';
 import { isEmpty } from 'lodash';
+import { GetIdlsRequest } from './dtos/request.dto';
+import { buildOrderBy } from 'src/common/utils/query.util';
+import { SortDirection } from 'src/common/enum/common.enum';
 
 @Injectable()
 export class IdlDappService {
@@ -29,7 +32,21 @@ export class IdlDappService {
     });
   }
 
-  async getAllIdls(): Promise<IdlDappEntity[]> {
-    return await this.idlDappRepository.find();
+  async getAllIdls(params: GetIdlsRequest): Promise<[IdlDappEntity[], number]> {
+    const [pageNum, pageSize, sorts] = params.pagination;
+
+    const query = this.idlDappRepository.createQueryBuilder('idl');
+
+    return await buildOrderBy(
+      query,
+      isEmpty(sorts)
+        ? {
+            'idl.createdAt': SortDirection.DESC,
+          }
+        : sorts,
+    )
+      .take(pageSize)
+      .skip(pageNum * pageSize)
+      .getManyAndCount();
   }
 }

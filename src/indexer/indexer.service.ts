@@ -22,6 +22,7 @@ import {
   CreateIndexerSpaceDto,
   CreateQueryLogDto,
   CreateTableDto,
+  GetIndexersRequest,
   RegisterIndexerWithTransformDto,
   UpdateTransformerDto,
 } from './dtos/request.dto';
@@ -29,12 +30,13 @@ import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IndexerEventName } from 'src/common/enum/event.enum';
-import { RpcService } from 'src/rpc/rpc.service';
+import { buildOrderBy } from 'src/common/utils/query.util';
+import { isEmpty } from 'lodash';
+import { SortDirection } from 'src/common/enum/common.enum';
 
 @Injectable()
 export class IndexerService {
   constructor(
-    private readonly rpcService: RpcService,
     private readonly eventEmitter: EventEmitter2,
     @InjectRepository(IndexerEntity)
     private readonly indexerRepository: Repository<IndexerEntity>,
@@ -87,35 +89,60 @@ export class IndexerService {
     });
   }
 
-  async getIndexers(): Promise<IndexerEntity[]> {
-    // TODO: Handle pagination
-    const indexers = await this.indexerRepository
+  async getIndexers(
+    params: GetIndexersRequest,
+  ): Promise<[IndexerEntity[], number]> {
+    const [pageNum, pageSize, sorts] = params.pagination;
+
+    const query = this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
-      .leftJoinAndSelect('indexer.account', 'account')
-      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
-      .orderBy('indexer.createdAt', 'DESC')
-      .getMany();
+      .leftJoinAndSelect('indexer.account', 'account');
 
-    return indexers;
+    return await buildOrderBy(
+      query,
+      isEmpty(sorts)
+        ? {
+            'indexer.createdAt': SortDirection.DESC,
+          }
+        : sorts,
+    )
+      .take(pageSize)
+      .skip(pageNum * pageSize)
+      .getManyAndCount();
   }
 
-  async getIndexersOwner(accountId: number): Promise<IndexerEntity[]> {
-    const indexers = await this.indexerRepository
+  async getIndexersOwner(
+    params: GetIndexersRequest,
+    accountId: number,
+  ): Promise<[IndexerEntity[], number]> {
+    const [pageNum, pageSize, sorts] = params.pagination;
+
+    const query = this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
       .leftJoinAndSelect('indexer.account', 'account')
-      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
-      .where('indexer.accountId = :accountId', { accountId })
-      .orderBy('indexer.createdAt', 'DESC')
-      .getMany();
+      .where('indexer.accountId = :accountId', { accountId });
 
-    return indexers;
+    return await buildOrderBy(
+      query,
+      isEmpty(sorts)
+        ? {
+            'indexer.createdAt': SortDirection.DESC,
+          }
+        : sorts,
+    )
+      .take(pageSize)
+      .skip(pageNum * pageSize)
+      .getManyAndCount();
   }
 
   async getIndexerById(indexerId: number): Promise<IndexerEntity> {
     const indexer = await this.indexerRepository.findOne({
       where: { id: indexerId },
+      relations: {
+        account: true,
+      },
     });
     if (!indexer) {
       throw new NotFoundException(`Indexer not found`);
