@@ -86,9 +86,7 @@ export const dataSourceOptions: TypeOrmModuleOptions = {
   synchronize: process.env.TYPEORM_SYNCHRONIZE
     ? JSON.parse(process.env.TYPEORM_SYNCHRONIZE)
     : false,
-  logging: process.env.TYPEORM_LOGGING
-    ? JSON.parse(process.env.TYPEORM_LOGGING)?.split(',')
-    : false,
+  logging: (process.env.TYPEORM_LOGGING?.split(',') as any[]) ?? false,
   entities: [`${__dirname}/../../dist/database/entities/*.entity.{ts,js}`],
   migrations: [`${__dirname}/../../dist/database/migrations/*.{ts,js}`],
   ssl: {
