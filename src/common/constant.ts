@@ -3,7 +3,7 @@ export const TypeColumn = [
   'varchar',
   'bigint',
   'integer',
-  'double',
+  'double precision',
   'boolean',
   'timestamp',
   'date',
