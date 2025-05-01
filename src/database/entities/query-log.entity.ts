@@ -16,6 +16,13 @@ export class QueryLogEntity extends AbstractEntity {
   id: number;
 
   @Column({
+    name: 'description',
+    type: 'text',
+    default: '',
+  })
+  description: string;
+
+  @Column({
     name: 'query',
     type: 'text',
     nullable: false,

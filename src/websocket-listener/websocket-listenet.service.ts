@@ -53,23 +53,21 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
       if (!this.rpcWebsockets.has(rpc.cluster)) {
         this.rpcWebsockets.set(rpc.cluster, []);
       }
-      const wsRpcUrl = this.rpcService.getFullWsUrl(rpc);
 
-      const rpcSocket = new WebSocket(wsRpcUrl);
+      const wsRpc = `ws://${rpc.url}`;
+
+      const rpcSocket = new WebSocket(wsRpc);
       this.rpcWebsockets.get(rpc.cluster).push(rpcSocket);
-      this.logger.info(`Connect to RPC (${rpc.cluster}): ${wsRpcUrl}`);
+      this.logger.info(`Connect to RPC (${rpc.cluster}): ${wsRpc}`);
     });
 
+    this.programClusterIds.set(Cluster.MAINNET, []);
+    this.programClusterIds.set(Cluster.DEVNET, []);
+    this.programClusterIds.set(Cluster.TESTNET, []);
+
     const programs = await this.getAllProgram();
-    if (isEmpty(programs)) {
-      this.programClusterIds.set(Cluster.MAINNET, []);
-      this.programClusterIds.set(Cluster.DEVNET, []);
-      this.programClusterIds.set(Cluster.TESTNET, []);
-    } else {
+    if (programs.length > 0) {
       for (const program of programs) {
-        if (!this.programClusterIds.has(program.network)) {
-          this.programClusterIds.set(program.network, []);
-        }
         this.programClusterIds.get(program.network).push(program.programId);
       }
     }
@@ -85,6 +83,7 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
 
     // Subscribe for PDA change
     for (const rpcSockets of this.rpcWebsockets.values()) {
+      // TODO: Need to update if had more than 1 rpc in one cluster
       for (const rpcSocket of rpcSockets) {
         rpcSocket.onmessage = async (event) => {
           const eventData = JSON.parse(

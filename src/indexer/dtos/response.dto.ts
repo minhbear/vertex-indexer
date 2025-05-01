@@ -1,10 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AccountResponse } from 'src/account/dtos/response.dto';
 import { TriggerType } from 'src/common/enum/common.enum';
 import {
   IndexerEntity,
   IndexerTableMetadataEntity,
   IndexerTriggerEntity,
   ISchemaTableDefinition,
+  QueryLogEntity,
   TransformerPdaEntity,
 } from 'src/database/entities';
 
@@ -125,6 +127,9 @@ export class IndexerResponse {
   @ApiProperty()
   ownerAccountId: number;
 
+  @ApiProperty({ type: AccountResponse })
+  owner: AccountResponse;
+
   constructor(indexer: IndexerEntity) {
     this.id = indexer.id;
     this.name = indexer.name;
@@ -134,5 +139,27 @@ export class IndexerResponse {
     this.idlId = indexer.idlId;
     this.cluster = indexer.cluster;
     this.ownerAccountId = indexer.accountId;
+    this.owner = new AccountResponse(indexer.account);
+  }
+}
+
+export class QueryLogResponse {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  description: string;
+
+  @ApiProperty()
+  query: string;
+
+  @ApiProperty()
+  indexerId: number;
+
+  constructor(queryLog: QueryLogEntity) {
+    this.id = queryLog.id;
+    this.description = queryLog.description;
+    this.query = queryLog.query;
+    this.indexerId = queryLog.indexerId;
   }
 }

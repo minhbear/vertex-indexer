@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +19,12 @@ import {
   ApiOperation,
 } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/common/guards/auth.guard';
+import { GetIdlsRequest } from './dtos/request.dto';
+import {
+  ApiPaginatedResponse,
+  PagingResponse,
+} from 'src/common/dtos/common.dto';
+import { IdlDappResponse } from './dtos/response.dto';
 
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard)
@@ -65,8 +72,17 @@ export class IdlDappController {
     }
   }
 
+  @ApiPaginatedResponse(IdlDappResponse)
   @Get('')
-  async getAllIdls() {
-    return await this.idlDappService.getAllIdls();
+  async getAllIdls(
+    @Query() params: GetIdlsRequest,
+  ): Promise<PagingResponse<IdlDappResponse>> {
+    const [idls, total] = await this.idlDappService.getAllIdls(params);
+
+    return {
+      pageData: idls.map((idl) => new IdlDappResponse(idl)),
+      total,
+      pageNum: params.pageNum,
+    };
   }
 }

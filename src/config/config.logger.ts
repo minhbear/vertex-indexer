@@ -1,10 +1,10 @@
-import { LoggerModule } from 'nestjs-pino';
-import { randomUUID } from 'node:crypto';
 import {
   LOG_FILE_PATH,
   LOGGING_CONSOLE_LEVEL,
   LOGGING_FILE_LEVEL,
 } from '../app.environment';
+import { LoggerModule } from 'nestjs-pino';
+import { randomUUID } from 'node:crypto';
 
 const pinoHttp = {
   useLevelLabels: true,

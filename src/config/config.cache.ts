@@ -1,11 +1,11 @@
-import { CacheModule } from '@nestjs/cache-manager';
-import KeyvRedis, { Keyv } from '@keyv/redis';
 import {
   REDIS_DATABASE_NUMBER,
   REDIS_HOST,
   REDIS_PASSWORD,
   REDIS_PORT,
 } from '../app.environment';
+import KeyvRedis, { Keyv } from '@keyv/redis';
+import { CacheModule } from '@nestjs/cache-manager';
 
 const redisConnection = `redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DATABASE_NUMBER}`;
 

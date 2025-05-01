@@ -1,22 +1,22 @@
-import { NestFactory, Reflector } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { initializeTransactionalContext } from 'typeorm-transactional';
-import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
 import {
   CONTEXT_PATH,
   NODE_ENV,
   PORT,
   SWAGGER_ENDPOINT,
 } from './app.environment';
+import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/exceptions/http-exception';
 import {
   ErrorsInterceptor,
   TransformResponseInterceptor,
 } from './common/interceptors';
+import { swaggerOptions } from './config';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
-import { swaggerOptions } from './config';
+import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
+import { initializeTransactionalContext } from 'typeorm-transactional';
 
 async function bootstrap() {
   initializeTransactionalContext();

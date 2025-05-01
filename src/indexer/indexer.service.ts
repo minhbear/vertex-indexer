@@ -14,12 +14,15 @@ import {
   IndexerTableMetadataEntity,
   IndexerTriggerEntity,
   ISchemaTableDefinition,
+  QueryLogEntity,
   TransformerPdaEntity,
 } from 'src/database/entities';
 import { Repository } from 'typeorm';
 import {
   CreateIndexerSpaceDto,
+  CreateQueryLogDto,
   CreateTableDto,
+  GetIndexersRequest,
   RegisterIndexerWithTransformDto,
   UpdateTransformerDto,
 } from './dtos/request.dto';
@@ -27,12 +30,13 @@ import { Transactional } from 'typeorm-transactional';
 import { createSlug } from 'src/common/utils';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IndexerEventName } from 'src/common/enum/event.enum';
-import { RpcService } from 'src/rpc/rpc.service';
+import { buildOrderBy } from 'src/common/utils/query.util';
+import { isEmpty } from 'lodash';
+import { SortDirection } from 'src/common/enum/common.enum';
 
 @Injectable()
 export class IndexerService {
   constructor(
-    private readonly rpcService: RpcService,
     private readonly eventEmitter: EventEmitter2,
     @InjectRepository(IndexerEntity)
     private readonly indexerRepository: Repository<IndexerEntity>,
@@ -44,6 +48,8 @@ export class IndexerService {
     private readonly transformerPdaRepository: Repository<TransformerPdaEntity>,
     @InjectRepository(IndexerTriggerEntity)
     private readonly indexerTriggerRepository: Repository<IndexerTriggerEntity>,
+    @InjectRepository(QueryLogEntity)
+    private readonly queryLogRepository: Repository<QueryLogEntity>,
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(IndexerService.name);
@@ -53,9 +59,7 @@ export class IndexerService {
     input: CreateIndexerSpaceDto,
     account: AccountEntity,
   ): Promise<void> {
-    const { idlId, name, rpcId, description, programId } = input;
-
-    const rpc = await this.rpcService.findById(rpcId);
+    const { idlId, name, cluster, description, programId } = input;
 
     let idl: IdlDappEntity | null = null;
     if (idlId) {
@@ -75,39 +79,75 @@ export class IndexerService {
       idlId: idl?.id,
       accountId: account.id,
       slug,
-      cluster: rpc.cluster,
-      rpcUrl: this.rpcService.getFullHttpUrl(rpc),
+      cluster,
       description,
     });
 
     this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
       programId,
-      cluster: rpc.cluster,
+      cluster,
     });
   }
 
-  async getIndexers(): Promise<IndexerEntity[]> {
-    // TODO: Handle pagination
-    const indexers = await this.indexerRepository
+  async getIndexers(
+    params: GetIndexersRequest,
+  ): Promise<[IndexerEntity[], number]> {
+    const [pageNum, pageSize, sorts] = params.pagination;
+
+    const query = this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
-      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
-      .orderBy('indexer.createdAt', 'DESC')
-      .getMany();
+      .leftJoinAndSelect('indexer.account', 'account');
 
-    return indexers;
+    return await buildOrderBy(
+      query,
+      isEmpty(sorts)
+        ? {
+            'indexer.createdAt': SortDirection.DESC,
+          }
+        : sorts,
+    )
+      .take(pageSize)
+      .skip(pageNum * pageSize)
+      .getManyAndCount();
   }
 
-  async getIndexersOwner(accountId: number): Promise<IndexerEntity[]> {
-    const indexers = await this.indexerRepository
+  async getIndexersOwner(
+    params: GetIndexersRequest,
+    accountId: number,
+  ): Promise<[IndexerEntity[], number]> {
+    const [pageNum, pageSize, sorts] = params.pagination;
+
+    const query = this.indexerRepository
       .createQueryBuilder('indexer')
       .leftJoinAndSelect('indexer.idl', 'idl')
-      .leftJoinAndSelect('indexer.indexerTriggers', 'triggers')
-      .where('indexer.accountId = :accountId', { accountId })
-      .orderBy('indexer.createdAt', 'DESC')
-      .getMany();
+      .leftJoinAndSelect('indexer.account', 'account')
+      .where('indexer.accountId = :accountId', { accountId });
 
-    return indexers;
+    return await buildOrderBy(
+      query,
+      isEmpty(sorts)
+        ? {
+            'indexer.createdAt': SortDirection.DESC,
+          }
+        : sorts,
+    )
+      .take(pageSize)
+      .skip(pageNum * pageSize)
+      .getManyAndCount();
+  }
+
+  async getIndexerById(indexerId: number): Promise<IndexerEntity> {
+    const indexer = await this.indexerRepository.findOne({
+      where: { id: indexerId },
+      relations: {
+        account: true,
+      },
+    });
+    if (!indexer) {
+      throw new NotFoundException(`Indexer not found`);
+    }
+    return indexer;
   }
 
   async getAllIndexerTriggerAndTransformOfTable(input: {
@@ -153,10 +193,17 @@ export class IndexerService {
       type: column.type,
       nullable: column.nullable ?? false,
     }));
+    const originalTableSchema = [...tableSchema];
+
+    tableSchema.push({
+      name: 'id',
+      type: 'bigint',
+      nullable: false,
+    });
 
     const newTableMetadata = this.tableMetadataRepository.create({
       tableName,
-      fullTableName: `${account.userName}_${indexer.slug}_${tableName}`,
+      fullTableName: `${account.userName}_${indexer.id}_${tableName}`,
       schema: tableSchema,
       indexerId,
       indexer,
@@ -165,7 +212,7 @@ export class IndexerService {
 
     const createTableQuery = this.generateCreateTableQuery(
       newTableMetadata.fullTableName,
-      tableSchema,
+      originalTableSchema,
     );
     await this.tableMetadataRepository.query(createTableQuery);
   }
@@ -296,16 +343,38 @@ export class IndexerService {
     await this.indexerTriggerRepository.delete({ id: trigger.id });
   }
 
+  async getAllQueryLogsInIndexer(indexerId: number): Promise<QueryLogEntity[]> {
+    const indexer = await this.findIndexer(indexerId);
+
+    return await this.queryLogRepository.find({
+      where: { indexerId: indexer.id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async createQueryLogs(input: CreateQueryLogDto): Promise<void> {
+    await this.findIndexerWithAccountId(input.indexerId, input.accountId);
+
+    const queryLog = this.queryLogRepository.create({
+      indexerId: input.indexerId,
+      query: input.query,
+      description: input.description,
+    });
+    await this.queryLogRepository.save(queryLog);
+  }
+
   private generateCreateTableQuery(
     tableName: string,
     schema: ISchemaTableDefinition[],
   ): string {
-    const columnsDefinition = schema
+    let columnsDefinition = schema
       .map(
         (col) =>
           `${col.name} ${this.mapColumnType(col.type)} ${col.nullable ? 'NULL' : 'NOT NULL'}`,
       )
       .join(', ');
+
+    columnsDefinition += `, id BIGSERIAL NOT NULL PRIMARY KEY`;
 
     return `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDefinition});`;
   }

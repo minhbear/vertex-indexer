@@ -10,8 +10,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { TypeColumn } from 'src/common/constant';
+import { PagingRequest } from 'src/common/dtos/common.dto';
 import { TriggerType } from 'src/common/enum/common.enum';
 import { ColumnType } from 'src/common/types/column-type';
+import { Cluster } from 'src/database/entities/rpc.entity';
 
 export class CreateIndexerSpaceDto {
   @ApiProperty()
@@ -27,8 +29,8 @@ export class CreateIndexerSpaceDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsNumber()
-  rpcId: number;
+  @IsEnum(Cluster)
+  cluster: Cluster;
 
   @ApiProperty()
   @IsNotEmpty()
@@ -42,6 +44,8 @@ export class CreateIndexerSpaceDto {
   @Transform(({ value }) => value.trim())
   programId: string;
 }
+
+export class GetIndexersRequest extends PagingRequest {}
 
 export class TableSchemaDto {
   @ApiProperty()
@@ -140,4 +144,18 @@ export class DeleteTriggerDto {
   indexerId: number;
 
   accountId: number;
+}
+
+export class CreateQueryLogDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  query: string;
+
+  @ApiProperty()
+  description: string;
+
+  accountId: number;
+
+  indexerId: number;
 }

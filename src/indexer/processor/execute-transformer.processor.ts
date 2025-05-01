@@ -7,20 +7,30 @@ import {
   SystemQueue,
   SystemQueueJob,
 } from 'src/common/queue';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import * as kamino from '../utils-transform/kamino';
 import * as raydium from '../utils-transform/raydium';
 import * as common from '../utils-transform/common';
 import { IExecuteTransformerJob } from '../interfaces/execute-transformer-job.interface';
 import { ITransformResult } from '../interfaces';
 import { IUserScriptContext } from '../interfaces/user-script-context.interface';
-import { isArray } from 'lodash';
+import { isArray, isNil } from 'lodash';
+import { IndexerTriggerEntity } from 'src/database/entities';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { AccountClient, AnchorProvider, Program } from '@coral-xyz/anchor';
+import { Inject } from '@nestjs/common';
+import Redis from 'ioredis';
 
 @Processor(SystemQueue.EXECUTE_TRANSFORMER)
 export class ExecuteTransformerProcessor extends AbstractJobProcessor {
   constructor(
+    @Inject('REDIS_CLIENT')
+    private readonly redis: Redis,
     @InjectExecuteTransformerQueue()
     private readonly executeTransformerQueue: Queue,
+    @InjectRepository(IndexerTriggerEntity)
+    private readonly indexerTriggerRepository: Repository<IndexerTriggerEntity>,
     private readonly dataSource: DataSource,
     protected readonly logger: PinoLogger,
   ) {
@@ -34,18 +44,47 @@ export class ExecuteTransformerProcessor extends AbstractJobProcessor {
     job: Job<IExecuteTransformerJob>,
   ): Promise<string> {
     try {
-      const {
-        context: contextData,
-        userScript,
-        fullTableName,
-        indexerId,
-      } = job.data;
+      const { indexerTriggerId, indexerId, pdaPubkeyStr } = job.data;
+
+      const indexerTrigger = await this.getIndexer(indexerTriggerId);
+      const indexer = indexerTrigger.indexer;
+
+      const rpc = await this.redis.get(`rpc:${indexer.cluster}`);
+      if (!rpc) {
+        this.logger.error(
+          `RPC not found for cluster ${indexer.cluster} in Redis`,
+        );
+        return 'FAILED';
+      }
+      const rpcUrl = `http://${rpc}`;
+
+      const connection = new Connection(rpcUrl, {
+        commitment: 'confirmed',
+      });
+
+      const idlJson = indexer.idl?.idlJson;
+      let pdaParser: any = null;
+      const pdaPubkey = new PublicKey(pdaPubkeyStr);
+      const pdaBuffer = (await connection.getAccountInfo(pdaPubkey)).data;
+      if (!isNil(idlJson)) {
+        const pdaName = indexerTrigger.pdaName;
+        const provider = new AnchorProvider(connection, null, {});
+        const program = new Program(idlJson, indexer.programId, provider);
+        if (!(pdaName in program.account)) {
+          this.logger.error(`PDA name ${pdaName} not found in program account`);
+          return 'FAILED';
+        }
+
+        const idlAccountName = (program.account[pdaName] as AccountClient)
+          .idlAccount.name;
+
+        pdaParser = program.coder.accounts.decode(idlAccountName, pdaBuffer);
+      }
 
       const context: IUserScriptContext = {
-        pdaBuffer: Buffer.from(contextData.pdaBuffer),
-        pdaParser: contextData.pdaParser
-          ? JSON.parse(contextData.pdaParser)
-          : null,
+        pdaBuffer: Buffer.from(pdaBuffer),
+        pdaParser,
+        pdaPubkeyStr,
       };
 
       const utils = {
@@ -53,6 +92,9 @@ export class ExecuteTransformerProcessor extends AbstractJobProcessor {
         raydium,
         common,
       };
+
+      const fullTableName = indexerTrigger.indexerTable.fullTableName;
+      const userScript = indexerTrigger.transformerPda.script;
 
       const executeFunction = new Function(
         'context',
@@ -167,5 +209,20 @@ export class ExecuteTransformerProcessor extends AbstractJobProcessor {
     }
 
     return true;
+  }
+
+  private async getIndexer(
+    indexerTriggerId: number,
+  ): Promise<IndexerTriggerEntity> {
+    return await this.indexerTriggerRepository
+      .createQueryBuilder('indexerTrigger')
+      .innerJoinAndSelect('indexerTrigger.indexer', 'indexer')
+      .leftJoinAndSelect('indexer.idl', 'idl')
+      .innerJoinAndSelect('indexerTrigger.transformerPda', 'transformerPda')
+      .innerJoinAndSelect('indexerTrigger.indexerTable', 'indexerTable')
+      .andWhere('indexerTrigger.id = :indexerTriggerId', {
+        indexerTriggerId,
+      })
+      .getOne();
   }
 }
