@@ -33,6 +33,7 @@ import { IndexerEventName } from 'src/common/enum/event.enum';
 import { buildOrderBy } from 'src/common/utils/query.util';
 import { isEmpty } from 'lodash';
 import { SortDirection } from 'src/common/enum/common.enum';
+import { IndexerCreateEvent } from 'src/websocket-listener/interfaces/event-module.interface';
 
 @Injectable()
 export class IndexerService {
@@ -81,11 +82,6 @@ export class IndexerService {
       slug,
       cluster,
       description,
-    });
-
-    this.eventEmitter.emit(IndexerEventName.INDEXER_CREATED, {
-      programId,
-      cluster,
     });
   }
 
@@ -293,6 +289,12 @@ export class IndexerService {
       triggerType: input.triggerType,
       transformerPdaId: transformId,
     });
+
+    this.eventEmitter.emit(IndexerEventName.INDEXER_TRIGGER_CREATED, {
+      programId: indexer.programId,
+      cluster: indexer.cluster,
+      pda: input.pdaPubkey,
+    } as IndexerCreateEvent);
   }
 
   async getAllTransformersOfIndexer(
