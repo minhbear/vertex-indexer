@@ -2,18 +2,13 @@ export interface ILogNotificationContext {
   slot: number;
 }
 
-export interface ILogNotificationAccount {
+export interface ILogNotificationValue {
   data: string[];
   executable: boolean;
   lamports: number;
   owner: string;
   rentEpoch: number;
   space: number;
-}
-
-export interface ILogNotificationValue {
-  pubkey: string;
-  account: ILogNotificationAccount;
 }
 
 export interface ILogNotificationResult {
@@ -26,8 +21,14 @@ export interface ILogNotificationParams {
   subscription: number;
 }
 
-export interface ILogsNotificationRPCResponse {
+export interface ILogsNotificationAccountChangeRPCResponse {
   jsonrpc: string;
   method: string;
   params: ILogNotificationParams;
+}
+
+export interface ILogSuccessSubscribeRPCResponse {
+  jsonrpc: string;
+  result: number;
+  id: number;
 }
