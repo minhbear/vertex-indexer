@@ -11,7 +11,7 @@ export const wait = (ms: number): Promise<void> => {
  * @param delay
  * @param maxRetries
  */
-export async function retry<T>(
+export async function retryAsync<T>(
   fn: () => Promise<T>,
   delay: number,
   maxRetries: number,
