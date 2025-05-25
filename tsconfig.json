@@ -17,7 +17,6 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "moduleResolution": "node16",
-    
   },
   "exclude": ["node_modules"]
 }
