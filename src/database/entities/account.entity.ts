@@ -10,8 +10,8 @@ export class AccountEntity extends AbstractEntity {
     name: 'email',
     type: 'varchar',
     length: 50,
-    nullable: false,
-    unique: true,
+    nullable: true,
+    unique: false,
   })
   email: string;
 
@@ -19,7 +19,7 @@ export class AccountEntity extends AbstractEntity {
     name: 'user_name',
     type: 'varchar',
     length: 50,
-    nullable: false,
+    nullable: true,
     unique: true,
   })
   userName: string;

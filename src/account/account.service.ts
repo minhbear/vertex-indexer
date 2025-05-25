@@ -81,7 +81,9 @@ export class AccountService {
     const newAccount = await this.accountRepository.save(
       this.accountRepository.create({
         walletAddress: walletAddress,
-        email: '',
+        email: null,
+        userName: null,
+        isUpdatedUserName: false,
       }),
     );
 

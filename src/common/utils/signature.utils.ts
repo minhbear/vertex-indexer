@@ -6,14 +6,6 @@ export const verifyMessageSignature = (input: {
   signature: string;
   walletAddress: string;
 }): boolean => {
-  return verifyStandardMessage(input);
-};
-
-const verifyStandardMessage = (input: {
-  message: string;
-  signature: string;
-  walletAddress: string;
-}): boolean => {
   const { message, signature, walletAddress } = input;
 
   return nacl.sign.detached.verify(
