@@ -240,6 +240,9 @@ export class WebsocketListenerService implements OnModuleInit, OnModuleDestroy {
     { programId: string; pdas: Set<string>; cluster: Cluster }[]
   > {
     const indexers = await this.indexerRepository.find({
+      where: {
+        isActive: true,
+      },
       relations: {
         indexerTriggers: true,
       },
