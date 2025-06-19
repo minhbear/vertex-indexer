@@ -92,6 +92,7 @@ export class PdaProcessor extends AbstractJobProcessor {
       .andWhere('indexer.programId = :programId', {
         programId: input.programId,
       })
+      .andWhere('indexer.isActive = :isActive', { isActive: true })
       .take(GET_INDEXER_PAGING)
       .skip(input.page * GET_INDEXER_PAGING)
       .getMany();
