@@ -1,4 +1,5 @@
 import { Idl } from '@coral-xyz/anchor';
+import { Idl as IdlV31 } from 'anchor-v31';
 import { ApiProperty } from '@nestjs/swagger';
 import { Cluster } from 'src/database/entities/rpc.entity';
 
@@ -13,7 +14,7 @@ export class IdlDappResponse {
   version: string;
 
   @ApiProperty()
-  idlJson: Idl;
+  idlJson: Idl | IdlV31;
 
   @ApiProperty()
   hashId: string;

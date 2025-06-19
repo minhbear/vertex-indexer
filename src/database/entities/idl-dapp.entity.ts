@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { Idl } from '@coral-xyz/anchor';
+import { Idl as IdlV31 } from 'anchor-v31';
 import { Cluster } from './rpc.entity';
 
 @Entity({
@@ -31,7 +32,7 @@ export class IdlDappEntity extends AbstractEntity {
     type: 'json',
     nullable: false,
   })
-  idlJson: Idl;
+  idlJson: Idl | IdlV31;
 
   @Column({
     name: 'hash_id',
