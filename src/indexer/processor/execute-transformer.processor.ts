@@ -19,6 +19,7 @@ import { IndexerTriggerEntity } from 'src/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AccountClient, AnchorProvider, Program } from '@coral-xyz/anchor';
+import { Program as ProgramV31 } from 'anchor-v31';
 import { Inject } from '@nestjs/common';
 import Redis from 'ioredis';
 
@@ -67,18 +68,37 @@ export class ExecuteTransformerProcessor extends AbstractJobProcessor {
       const pdaPubkey = new PublicKey(pdaPubkeyStr);
       const pdaBuffer = (await connection.getAccountInfo(pdaPubkey)).data;
       if (!isNil(idlJson)) {
-        const pdaName = indexerTrigger.pdaName;
-        const provider = new AnchorProvider(connection, null, {});
-        const program = new Program(idlJson, indexer.programId, provider);
-        if (!(pdaName in program.account)) {
-          this.logger.error(`PDA name ${pdaName} not found in program account`);
-          return 'FAILED';
+        if ('address' in idlJson) {
+          const pdaName = indexerTrigger.pdaName;
+          const provider = new AnchorProvider(connection, null, {});
+          const program = new ProgramV31(idlJson, provider);
+
+          if (!(pdaName in program.account)) {
+            this.logger.error(
+              `PDA name ${pdaName} not found in program account`,
+            );
+            return 'FAILED';
+          }
+
+          const idlAccountName = program.account[pdaName]._idlAccount.name;
+
+          pdaParser = program.coder.accounts.decode(idlAccountName, pdaBuffer);
+        } else {
+          const pdaName = indexerTrigger.pdaName;
+          const provider = new AnchorProvider(connection, null, {});
+          const program = new Program(idlJson, indexer.programId, provider);
+          if (!(pdaName in program.account)) {
+            this.logger.error(
+              `PDA name ${pdaName} not found in program account`,
+            );
+            return 'FAILED';
+          }
+
+          const idlAccountName = (program.account[pdaName] as AccountClient)
+            .idlAccount.name;
+
+          pdaParser = program.coder.accounts.decode(idlAccountName, pdaBuffer);
         }
-
-        const idlAccountName = (program.account[pdaName] as AccountClient)
-          .idlAccount.name;
-
-        pdaParser = program.coder.accounts.decode(idlAccountName, pdaBuffer);
       }
 
       const context: IUserScriptContext = {

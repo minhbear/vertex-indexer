@@ -61,6 +61,14 @@ export class IndexerEntity extends AbstractEntity {
   cluster: Cluster;
 
   @Column({
+    name: 'is_active',
+    type: 'boolean',
+    nullable: false,
+    default: true,
+  })
+  isActive: boolean;
+
+  @Column({
     name: 'idl_id',
     type: 'bigint',
     nullable: true,
